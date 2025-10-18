@@ -1,9 +1,10 @@
 # gazelle-dinov3
 
 ```bash
-git clone --recurse-submodules https://github.com/PINTO0309/gazelle-dinov3.git
-cd gazelle-dinov3
-git submodule update --init --recursive
+git clone https://github.com/PINTO0309/gazelle-dinov3.git && cd gazelle-dinov3
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv sync
+source .venv/bin/activate
 ```
 ```bash
 uv run python data_prep/preprocess_gazefollow.py \
