@@ -10,6 +10,15 @@ source .venv/bin/activate
 uv run python data_prep/preprocess_gazefollow.py \
 --data_path ./data/gazefollow_extended
 ```
+
+Dwonloads Distill-DINOv3 pretrain pt to `ckpts`.
+- https://github.com/PINTO0309/DEIMv2/releases/download/weights/vitt_distill.pt
+- https://github.com/PINTO0309/DEIMv2/releases/download/weights/vittplus_distill.pt
+
+Dwonloads DINOv3 pretrain pth: From https://github.com/facebookresearch/dinov3 to `ckpts`.
+- `dinov3_vits16_pretrain_lvd1689m-08c60483.pth`
+- `dinov3_vits16plus_pretrain_lvd1689m-4057cbaa.pth`
+
 ```bash
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
