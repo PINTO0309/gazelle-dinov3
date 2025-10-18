@@ -32,6 +32,7 @@ Dwonloads DINOv3 pretrain pth: From https://github.com/facebookresearch/dinov3 t
 ## Training
 
 ```bash
+### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vit_tiny \
@@ -43,6 +44,20 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 16 \
 --use_amp
 
+### backbone finetune
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vit_tiny \
+--exp_name gazelle_dinov3_s \
+--log_iter 10 \
+--max_epochs 60 \
+--batch_size 8 \
+--lr 1e-3 \
+--n_workers 8 \
+--use_amp \
+--finetune
+
+### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vit_tinyplus \
@@ -54,6 +69,7 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 16 \
 --use_amp
 
+### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vits16 \
@@ -65,6 +81,7 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp
 
+### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vits16plus \
