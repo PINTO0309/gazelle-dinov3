@@ -32,7 +32,7 @@ Dwonloads DINOv3 pretrain pth: From https://github.com/facebookresearch/dinov3 t
 ## Training
 
 ```
-################################### S
+############################################# S
 ### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
@@ -78,7 +78,7 @@ python scripts/train_gazefollow.py \
 | Frozen params      |       4.60 |
 └--------------------┴------------┘
 
-################################### M
+############################################# M
 ### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
@@ -124,7 +124,7 @@ uv run python scripts/train_gazefollow.py \
 | Frozen params      |       8.09 |
 └--------------------┴------------┘
 
-################################### L
+############################################# L
 ### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
@@ -170,7 +170,7 @@ uv run python scripts/train_gazefollow.py \
 | Frozen params      |      18.05 |
 └--------------------┴------------┘
 
-################################### X
+############################################# X
 ### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
@@ -216,7 +216,7 @@ uv run python scripts/train_gazefollow.py \
 | Frozen params      |      23.96 |
 └--------------------┴------------┘
 
-################################### XL
+############################################# XL
 ### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
