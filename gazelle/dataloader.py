@@ -30,7 +30,7 @@ class GazeDataset(torch.utils.data.dataset.Dataset):
         self.transform = transform
         self.in_frame_only = in_frame_only
         self.sample_rate = sample_rate
-        
+
         if dataset_name == "gazefollow":
             self.data = load_data_gazefollow(os.path.join(self.path, "{}_preprocessed.json".format(split)))
         elif dataset_name == "videoattentiontarget":
@@ -65,6 +65,8 @@ class GazeDataset(torch.utils.data.dataset.Dataset):
             gazey = head_data['gazey']
 
             if np.random.sample() <= 0.5:
+                img = utils.random_photometric_distort(img)
+            if np.random.sample() <= 0.5:
                 img, bbox, gazex, gazey = utils.random_crop(img, bbox, gazex, gazey, inout)
             if np.random.sample() <= 0.5:
                 img, bbox, gazex, gazey = utils.horiz_flip(img, bbox, gazex, gazey, inout)
@@ -76,9 +78,9 @@ class GazeDataset(torch.utils.data.dataset.Dataset):
             bbox_norm = [bbox[0] / width, bbox[1] / height, bbox[2] / width, bbox[3] / height]
             gazex_norm = [x / float(width) for x in gazex]
             gazey_norm = [y / float(height) for y in gazey]
-        
+
         img = self.transform(img)
-        
+
         if self.split == "train":
             heatmap = utils.get_heatmap(gazex_norm[0], gazey_norm[0], 64, 64) # note for training set, there is only one annotation
             return img, bbox_norm, gazex_norm, gazey_norm, torch.tensor(inout), height, width, heatmap
@@ -96,4 +98,4 @@ def collate_fn(batch):
         for items in transposed
     )
 
-    
+
