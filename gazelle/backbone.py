@@ -139,7 +139,7 @@ class DinoV2Backbone(Backbone):
                 mean=[0.485,0.456,0.406],
                 std=[0.229,0.224,0.225]
             ),
-            transforms.Resize(in_size, antialias=False),
+            transforms.Resize(in_size),
         ])
 
 # https://github.com/PINTO0309/DEIMv2/blob/uv/engine/backbone/vit_tiny.py#L230
@@ -533,5 +533,5 @@ class DinoV3Backbone(Backbone):
                 mean=[0.485,0.456,0.406],
                 std=[0.229,0.224,0.225]
             ),
-            transforms.Resize(in_size, antialias=False),
+            transforms.Resize(in_size),
         ])
