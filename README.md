@@ -30,4 +30,37 @@ uv run python scripts/train_gazefollow.py \
 --lr 1e-3 \
 --n_workers 16 \
 --use_amp
+
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vit_tinyplus \
+--exp_name gazelle_dinov3_m \
+--log_iter 10 \
+--max_epochs 15 \
+--batch_size 32 \
+--lr 1e-3 \
+--n_workers 16 \
+--use_amp
+
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vits16 \
+--exp_name gazelle_dinov3_l \
+--log_iter 10 \
+--max_epochs 15 \
+--batch_size 8 \
+--lr 1e-3 \
+--n_workers 8 \
+--use_amp
+
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vits16plus \
+--exp_name gazelle_dinov3_x \
+--log_iter 10 \
+--max_epochs 15 \
+--batch_size 8 \
+--lr 1e-3 \
+--n_workers 8 \
+--use_amp
 ```
