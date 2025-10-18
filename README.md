@@ -9,10 +9,15 @@ source .venv/bin/activate
 ```
 ## Data Preprocessing
 
-```bash
-uv run python data_prep/preprocess_gazefollow.py \
---data_path ./data/gazefollow_extended
-```
+- Downloads
+  - GazeFollow dataset: https://github.com/ejcgt/attention-target-detection?tab=readme-ov-file#dataset
+  - VideoAttentionTarget dataset: https://github.com/ejcgt/attention-target-detection?tab=readme-ov-file#dataset-1
+
+- Preprocessing
+  ```bash
+  uv run python data_prep/preprocess_gazefollow.py \
+  --data_path ./data/gazefollow_extended
+  ```
 
 ## Download pre-trained backbones
 
