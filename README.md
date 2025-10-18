@@ -31,7 +31,7 @@ Dwonloads DINOv3 pretrain pth: From https://github.com/facebookresearch/dinov3 t
 
 ## Training
 
-```bash
+```
 ################################### S
 ### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
