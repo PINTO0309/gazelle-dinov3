@@ -7,10 +7,10 @@ import math
 import gazelle.utils as utils
 from gazelle.backbone import DinoV2Backbone, DinoV3Backbone
 import torchvision.transforms.functional as F
-from typing import List
+from typing import List, Dict
 
 class GazeLLE(nn.Module):
-    def __init__(self, backbone, inout=False, dim=256, num_layers=3, in_size=(448, 448), out_size=(64, 64)):
+    def __init__(self, backbone: DinoV2Backbone | DinoV3Backbone, inout=False, dim=256, num_layers=3, in_size=(448, 448), out_size=(64, 64)):
         super().__init__()
         self.backbone = backbone
         self.dim = dim
@@ -23,6 +23,7 @@ class GazeLLE(nn.Module):
         self.linear = nn.Conv2d(backbone.get_dimension(), self.dim, 1)
         self.head_token = nn.Embedding(1, self.dim)
         self.register_buffer("pos_embed", positionalencoding2d(self.dim, self.featmap_h, self.featmap_w).squeeze(dim=0).squeeze(dim=0))
+        self.pos_embed: torch.Tensor
         if self.inout: self.inout_token = nn.Embedding(1, self.dim)
         self.transformer = nn.Sequential(*[
             Block(
@@ -63,17 +64,19 @@ class GazeLLE(nn.Module):
         if self.inout:
             x = torch.cat([self.inout_token.weight.unsqueeze(dim=0).repeat(x.shape[0], 1, 1), x], dim=1)
 
-        x = self.transformer(x)
+        x: torch.Tensor = self.transformer(x)
 
         if self.inout:
             inout_tokens = x[:, 0, :]
-            inout_preds = self.inout_head(inout_tokens).squeeze(dim=-1)
+            inout_preds: torch.Tensor = self.inout_head(inout_tokens)
+            inout_preds = inout_preds.squeeze(dim=-1)
             inout_preds = utils.split_tensors(inout_preds, num_ppl_per_img)
             x = x[:, 1:, :] # slice off inout tokens from scene tokens
 
         x = x.reshape(x.shape[0], self.featmap_h, self.featmap_w, x.shape[2]).permute(0, 3, 1, 2) # b (h w) c -> b c h w
-        x = self.heatmap_head(x).squeeze(dim=1)
-        x = torchvision.transforms.functional.resize(x, self.out_size, antialias=False)
+        x = self.heatmap_head(x)
+        x = x.squeeze(dim=1)
+        x = F.resize(x, self.out_size, antialias=False)
         heatmap_preds = utils.split_tensors(x, num_ppl_per_img) # resplit per image
 
         return {"heatmap": heatmap_preds, "inout": inout_preds if self.inout else None}
@@ -105,7 +108,7 @@ class GazeLLE(nn.Module):
         else:
             return {k: v for k, v in self.state_dict().items() if not k.startswith("backbone")}
 
-    def load_gazelle_state_dict(self, ckpt_state_dict, include_backbone=False):
+    def load_gazelle_state_dict(self, ckpt_state_dict: Dict, include_backbone=False):
         current_state_dict = self.state_dict()
         keys1 = current_state_dict.keys()
         keys2 = ckpt_state_dict.keys()
@@ -129,9 +132,9 @@ class GazeLLE(nn.Module):
 
 
 class GazeLLE_ONNX(nn.Module):
-    def __init__(self, backbone, inout=False, dim=256, num_layers=3, in_size=(448, 448), out_size=(64, 64)):
+    def __init__(self, backbone: DinoV2Backbone | DinoV3Backbone, inout=False, dim=256, num_layers=3, in_size=(448, 448), out_size=(64, 64)):
         super().__init__()
-        self.backbone = backbone
+        self.backbone: nn.Module = backbone
         self.dim = dim
         self.num_layers = num_layers
         self.featmap_h, self.featmap_w = backbone.get_out_size(in_size)
@@ -141,6 +144,7 @@ class GazeLLE_ONNX(nn.Module):
 
         self.linear = nn.Conv2d(backbone.get_dimension(), self.dim, 1)
         self.register_buffer("pos_embed", positionalencoding2d(self.dim, self.featmap_h, self.featmap_w).squeeze(dim=0).squeeze(dim=0))
+        self.pos_embed: torch.Tensor
         self.transformer = nn.Sequential(*[
             Block(
                 dim=self.dim,
@@ -165,7 +169,7 @@ class GazeLLE_ONNX(nn.Module):
             )
             self.inout_token = nn.Embedding(1, self.dim)
 
-    def forward(self, image_bgr, bboxes):
+    def forward(self, image_bgr: torch.Tensor, bboxes: torch.Tensor):
         mean = torch.tensor([0.485,0.456,0.406], dtype=torch.float32).reshape([1,3,1,1])
         std = torch.tensor([0.229,0.224,0.225], dtype=torch.float32).reshape([1,3,1,1])
 
@@ -176,7 +180,7 @@ class GazeLLE_ONNX(nn.Module):
 
         num_ppl_per_img = bboxes.shape[1]
 
-        x = self.backbone.forward(image_rgb)
+        x: torch.Tensor = self.backbone.forward(image_rgb)
         x = self.linear(x)
         x = x + self.pos_embed
         x = x * torch.ones([num_ppl_per_img,1,1,1], dtype=torch.float32)
@@ -193,12 +197,14 @@ class GazeLLE_ONNX(nn.Module):
 
         if self.inout:
             inout_tokens = x[:, 0, :]
-            inout_preds = self.inout_head(inout_tokens).squeeze(dim=-1)
+            inout_preds: torch.Tensor = self.inout_head(inout_tokens)
+            inout_preds = inout_preds.squeeze(dim=-1)
             x = x[:, 1:, :] # slice off inout tokens from scene tokens
 
         x = x.reshape(x.shape[0], self.featmap_h, self.featmap_w, x.shape[2]).permute(0, 3, 1, 2) # b (h w) c -> b c h w
-        x = self.heatmap_head(x).squeeze(dim=1)
-        x = torchvision.transforms.functional.resize(x, self.out_size, antialias=False)
+        x = self.heatmap_head(x)
+        x = x.squeeze(dim=1)
+        x = F.resize(x, self.out_size, antialias=False)
         heatmap_preds = x
 
         return {"heatmap": heatmap_preds, "inout": inout_preds if self.inout else None}
@@ -240,7 +246,7 @@ class GazeLLE_ONNX(nn.Module):
         else:
             return {k: v for k, v in self.state_dict().items() if not k.startswith("backbone")}
 
-    def load_gazelle_state_dict(self, ckpt_state_dict, include_backbone=False):
+    def load_gazelle_state_dict(self, ckpt_state_dict: Dict, include_backbone=False):
         current_state_dict = self.state_dict()
         keys1 = current_state_dict.keys()
         keys2 = ckpt_state_dict.keys()
@@ -271,13 +277,11 @@ def positionalencoding2d(d_model, height, width):
     :return: d_model*height*width position matrix
     """
     if d_model % 4 != 0:
-        raise ValueError("Cannot use sin/cos positional encoding with "
-                         "odd dimension (got dim={:d})".format(d_model))
+        raise ValueError("Cannot use sin/cos positional encoding with odd dimension (got dim={:d})".format(d_model))
     pe = torch.zeros(d_model, height, width)
     # Each dimension use half of d_model
     d_model = int(d_model / 2)
-    div_term = torch.exp(torch.arange(0., d_model, 2) *
-                         -(math.log(10000.0) / d_model))
+    div_term = torch.exp(torch.arange(0., d_model, 2) * -(math.log(10000.0) / d_model))
     pos_w = torch.arange(0., width).unsqueeze(1)
     pos_h = torch.arange(0., height).unsqueeze(1)
     pe[0:d_model:2, :, :] = torch.sin(pos_w * div_term).transpose(0, 1).unsqueeze(1).repeat(1, height, 1)
