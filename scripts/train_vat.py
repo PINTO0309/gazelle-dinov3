@@ -113,6 +113,23 @@ def prune_epoch_checkpoints(exp_dir, keep=10):
             print(f"WARNING: unable to remove old checkpoint {ckpt}: {error}")
 
 
+def print_param_summary(rows):
+    col1_width = max(len(label) for label, _ in rows + [("Category", 0)])
+    value_strs = [f"{count / 1_000_000:.2f}" for _, count in rows]
+    col2_width = max(len("Params [M]"), max(len(v) for v in value_strs))
+
+    header = "┏" + "━" * (col1_width + 2) + "┳" + "━" * (col2_width + 2) + "┓"
+    divider = "┗" + "━" * (col1_width + 2) + "┻" + "━" * (col2_width + 2) + "┛"
+    footer = "└" + "-" * (col1_width + 2) + "┴" + "-" * (col2_width + 2) + "┘"
+
+    print(header)
+    print(f"┃ {'Category':<{col1_width}} ┃ {'Params [M]':>{col2_width}} ┃")
+    print(divider)
+    for (label, _), value in zip(rows, value_strs):
+        print(f"| {label:<{col1_width}} | {value:>{col2_width}} |")
+    print(footer)
+
+
 def main():
     resume_checkpoint = torch.load(args.resume, map_location='cpu') if args.resume else None
     if resume_checkpoint is not None and "model" not in resume_checkpoint:
@@ -188,9 +205,21 @@ def main():
         raise RuntimeError("No trainable parameter groups configured for optimizer.")
     optimizer = torch.optim.Adam(param_groups)
 
-    total_learnable = sum(p.numel() for group in param_groups for p in group['params'])
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     backbone_learnable = sum(p.numel() for p in backbone_trainable_params)
-    print(f"Learnable parameters: {total_learnable} (backbone finetune: {backbone_learnable})")
+    head_learnable = trainable_params - backbone_learnable
+    frozen_params = total_params - trainable_params
+
+    rows = [
+        ("Total params", total_params),
+        ("Trainable params", trainable_params),
+        ("Backbone trainable", backbone_learnable),
+        ("Head trainable", head_learnable),
+        ("Frozen params", frozen_params),
+    ]
+    print_param_summary(rows)
+    print(f"Learnable parameters: {trainable_params} (backbone finetune: {backbone_learnable})")
 
     heatmap_loss_fn = nn.BCELoss()
     inout_loss_fn = nn.BCELoss()
