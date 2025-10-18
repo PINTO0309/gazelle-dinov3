@@ -61,7 +61,7 @@ python scripts/train_gazefollow.py \
 --model_name gazelle_dinov3_vit_tiny \
 --exp_name gazelle_dinov3_s_ft \
 --log_iter 50 \
---max_epochs 60 \
+--max_epochs 100 \
 --batch_size 128 \
 --lr 1e-3 \
 --n_workers 50 \
