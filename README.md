@@ -91,6 +91,16 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 16 \
 --use_amp
 
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Category           ┃ Params [M] ┃
+┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
+| Total params       |      12.37 |
+| Trainable params   |       2.70 |
+| Backbone trainable |       0.00 |
+| Head trainable     |       2.70 |
+| Frozen params      |       9.67 |
+└--------------------┴------------┘
+
 ### backbone finetune - GH200
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
@@ -103,6 +113,16 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 16 \
 --use_amp \
 --finetune
+
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Category           ┃ Params [M] ┃
+┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
+| Total params       |      12.37 |
+| Trainable params   |       4.28 |
+| Backbone trainable |       1.58 |
+| Head trainable     |       2.70 |
+| Frozen params      |       8.09 |
+└--------------------┴------------┘
 
 ################################### L
 ### backbone no-finetune
@@ -117,6 +137,16 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp
 
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Category           ┃ Params [M] ┃
+┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
+| Total params       |      24.33 |
+| Trainable params   |       2.73 |
+| Backbone trainable |       0.00 |
+| Head trainable     |       2.73 |
+| Frozen params      |      21.60 |
+└--------------------┴------------┘
+
 ### backbone finetune - GH200
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
@@ -129,6 +159,16 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp \
 --finetune
+
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Category           ┃ Params [M] ┃
+┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
+| Total params       |      24.33 |
+| Trainable params   |       6.28 |
+| Backbone trainable |       3.55 |
+| Head trainable     |       2.73 |
+| Frozen params      |      18.05 |
+└--------------------┴------------┘
 
 ################################### X
 ### backbone no-finetune
@@ -143,6 +183,16 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp
 
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Category           ┃ Params [M] ┃
+┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
+| Total params       |      31.43 |
+| Trainable params   |       2.73 |
+| Backbone trainable |       0.00 |
+| Head trainable     |       2.73 |
+| Frozen params      |      28.70 |
+└--------------------┴------------┘
+
 ### backbone finetune - GH200
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
@@ -155,6 +205,16 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp \
 --finetune
+
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Category           ┃ Params [M] ┃
+┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
+| Total params       |      31.43 |
+| Trainable params   |       7.46 |
+| Backbone trainable |       4.73 |
+| Head trainable     |       2.73 |
+| Frozen params      |      23.96 |
+└--------------------┴------------┘
 ```
 
 |Value|Note|
