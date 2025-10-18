@@ -215,6 +215,52 @@ uv run python scripts/train_gazefollow.py \
 | Head trainable     |       2.73 |
 | Frozen params      |      23.96 |
 └--------------------┴------------┘
+
+################################### XL
+### backbone no-finetune
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vitb16 \
+--exp_name gazelle_dinov3_xl \
+--log_iter 10 \
+--max_epochs 20 \
+--batch_size 8 \
+--lr 1e-3 \
+--n_workers 8 \
+--use_amp
+
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Category           ┃ Params [M] ┃
+┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
+| Total params       |      88.50 |
+| Trainable params   |       2.83 |
+| Backbone trainable |       0.00 |
+| Head trainable     |       2.83 |
+| Frozen params      |      85.67 |
+└--------------------┴------------┘
+
+### backbone finetune - GH200
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vitb16 \
+--exp_name gazelle_dinov3_xl_ft \
+--log_iter 10 \
+--max_epochs 20 \
+--batch_size 8 \
+--lr 1e-3 \
+--n_workers 8 \
+--use_amp \
+--finetune
+
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Category           ┃ Params [M] ┃
+┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
+| Total params       |      88.50 |
+| Trainable params   |      17.01 |
+| Backbone trainable |      14.18 |
+| Head trainable     |       2.83 |
+| Frozen params      |      71.49 |
+└--------------------┴------------┘
 ```
 
 |Value|Note|
