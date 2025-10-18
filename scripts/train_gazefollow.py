@@ -5,10 +5,16 @@ from datetime import datetime
 import numpy as np
 import os
 import random
+import sys
+from pathlib import Path
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 from torch.amp import autocast, GradScaler
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from gazelle.dataloader import GazeDataset, collate_fn
 from gazelle.model import get_gazelle_model
