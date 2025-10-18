@@ -289,7 +289,7 @@ def positionalencoding2d(d_model, height, width):
 
 
 # models
-def get_gazelle_model(model_name: str, onnx_export: bool=False):
+def get_gazelle_model(model_name: str, onnx_export: bool=False, finetune_backbone: bool=False):
     factory = {
         # DINOv2
         "gazelle_dinov2_vitb14": lambda: gazelle_dinov2_vitb14(onnx_export),
@@ -301,7 +301,7 @@ def get_gazelle_model(model_name: str, onnx_export: bool=False):
         "gazelle_dinov3_vit_tiny": lambda: gazelle_dinov3_vit_tiny(
             weights_path="./ckpts/vitt_distill.pt",
             interaction_indexes=[3, 7, 11],
-            finetune=False,
+            finetune=finetune_backbone,
             embed_dim=192,
             num_heads=3,
             patch_size=16,
@@ -310,7 +310,7 @@ def get_gazelle_model(model_name: str, onnx_export: bool=False):
         "gazelle_dinov3_vit_tinyplus": lambda: gazelle_dinov3_vit_tinyplus(
             weights_path="./ckpts/vittplus_distill.pt",
             interaction_indexes=[3, 7, 11],
-            finetune=False,
+            finetune=finetune_backbone,
             embed_dim=256,
             num_heads=4,
             patch_size=16,
@@ -319,7 +319,7 @@ def get_gazelle_model(model_name: str, onnx_export: bool=False):
         "gazelle_dinov3_vits16": lambda: gazelle_dinov3_vits16(
             weights_path="./ckpts/dinov3_vits16_pretrain_lvd1689m-08c60483.pth",
             interaction_indexes=[5, 8, 11],
-            finetune=False,
+            finetune=finetune_backbone,
             embed_dim=192,
             num_heads=3,
             patch_size=16,
@@ -328,7 +328,7 @@ def get_gazelle_model(model_name: str, onnx_export: bool=False):
         "gazelle_dinov3_vits16plus": lambda: gazelle_dinov3_vits16plus(
             weights_path="./ckpts/dinov3_vits16plus_pretrain_lvd1689m-4057cbaa.pth",
             interaction_indexes=[5, 8, 11],
-            finetune=False,
+            finetune=finetune_backbone,
             embed_dim=192,
             num_heads=3,
             patch_size=16,
