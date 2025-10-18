@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter('ignore')
 import os
 import torch
 from gazelle.model import get_gazelle_model
@@ -42,7 +44,8 @@ models = {
 
 for m, params in models.items():
     model, transform = get_gazelle_model(model_name=m, onnx_export=True)
-    model.load_gazelle_state_dict(torch.load(params[0], weights_only=False))
+    ckpt = torch.load(params[0], weights_only=False)["model"]
+    model.load_gazelle_state_dict(ckpt)
     model.eval()
     model.cpu()
 
