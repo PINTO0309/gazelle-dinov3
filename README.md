@@ -44,16 +44,16 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 16 \
 --use_amp
 
-### backbone finetune
-uv run python scripts/train_gazefollow.py \
+### backbone finetune - GH200
+python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vit_tiny \
 --exp_name gazelle_dinov3_s \
---log_iter 10 \
+--log_iter 50 \
 --max_epochs 60 \
---batch_size 8 \
+--batch_size 128 \
 --lr 1e-3 \
---n_workers 8 \
+--n_workers 50 \
 --use_amp \
 --finetune
 
