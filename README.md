@@ -59,7 +59,7 @@ uv run python scripts/train_gazefollow.py \
 python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vit_tiny \
---exp_name gazelle_dinov3_s \
+--exp_name gazelle_dinov3_s_ft \
 --log_iter 50 \
 --max_epochs 60 \
 --batch_size 128 \
@@ -105,7 +105,7 @@ uv run python scripts/train_gazefollow.py \
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vit_tinyplus \
---exp_name gazelle_dinov3_m \
+--exp_name gazelle_dinov3_m_ft \
 --log_iter 10 \
 --max_epochs 40 \
 --batch_size 32 \
@@ -151,7 +151,7 @@ uv run python scripts/train_gazefollow.py \
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vits16 \
---exp_name gazelle_dinov3_l \
+--exp_name gazelle_dinov3_l_ft \
 --log_iter 10 \
 --max_epochs 20 \
 --batch_size 8 \
@@ -197,7 +197,7 @@ uv run python scripts/train_gazefollow.py \
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vits16plus \
---exp_name gazelle_dinov3_l \
+--exp_name gazelle_dinov3_x_ft \
 --log_iter 10 \
 --max_epochs 20 \
 --batch_size 8 \
