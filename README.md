@@ -91,6 +91,19 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 16 \
 --use_amp
 
+### backbone finetune - GH200
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vit_tinyplus \
+--exp_name gazelle_dinov3_m \
+--log_iter 10 \
+--max_epochs 40 \
+--batch_size 32 \
+--lr 1e-3 \
+--n_workers 16 \
+--use_amp \
+--finetune
+
 ################################### L
 ### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
@@ -104,6 +117,19 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp
 
+### backbone finetune - GH200
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vits16 \
+--exp_name gazelle_dinov3_l \
+--log_iter 10 \
+--max_epochs 20 \
+--batch_size 8 \
+--lr 1e-3 \
+--n_workers 8 \
+--use_amp \
+--finetune
+
 ################################### X
 ### backbone no-finetune
 uv run python scripts/train_gazefollow.py \
@@ -116,6 +142,19 @@ uv run python scripts/train_gazefollow.py \
 --lr 1e-3 \
 --n_workers 8 \
 --use_amp
+
+### backbone finetune - GH200
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vits16plus \
+--exp_name gazelle_dinov3_l \
+--log_iter 10 \
+--max_epochs 20 \
+--batch_size 8 \
+--lr 1e-3 \
+--n_workers 8 \
+--use_amp \
+--finetune
 ```
 
 |Value|Note|
