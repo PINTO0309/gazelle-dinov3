@@ -17,6 +17,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from gazelle.dataloader import GazeDataset, collate_fn
+from gazelle.backbone import configure_backbone_finetune
 from gazelle.model import get_gazelle_model
 from gazelle.utils import vat_auc, vat_l2
 
@@ -36,6 +37,10 @@ parser.add_argument('--lr_non_inout', type=float, default=1e-5)
 parser.add_argument('--lr_inout', type=float, default=1e-2)
 parser.add_argument('--n_workers', type=int, default=8)
 parser.add_argument('--resume', type=str, default=None, help='path to checkpoint to resume training from')
+parser.add_argument('--finetune', action='store_true', help='enable finetuning of the backbone')
+parser.add_argument('--finetune_layers', type=int, default=2, help='number of final transformer blocks to finetune (<=0 means all)')
+parser.add_argument('--backbone_lr', type=float, default=1e-5, help='learning rate for finetuned backbone parameters')
+parser.add_argument('--backbone_weight_decay', type=float, default=0.0, help='weight decay applied to finetuned backbone parameters')
 args = parser.parse_args()
 
 
@@ -98,7 +103,22 @@ def main():
     if resume_checkpoint is not None and "model" not in resume_checkpoint:
         raise ValueError(f"The checkpoint at {args.resume} does not contain full training state required for resuming.")
 
+    saved_args = {}
     if resume_checkpoint is not None:
+        saved_args = resume_checkpoint.get("args") or {}
+
+        def restore_arg(name):
+            if name not in saved_args:
+                return
+            saved_value = saved_args[name]
+            current_value = getattr(args, name, None)
+            if current_value != saved_value:
+                print(f"WARNING: resume checkpoint stored {name}={saved_value}, overriding current value {current_value}.")
+            setattr(args, name, saved_value)
+
+        for field in ("finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay"):
+            restore_arg(field)
+
         timestamp = resume_checkpoint.get("timestamp") or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         exp_dir = resume_checkpoint.get("exp_dir") or os.path.dirname(os.path.abspath(args.resume))
         log_dir = resume_checkpoint.get("log_dir") or os.path.join(args.log_dir, args.exp_name, timestamp)
@@ -120,7 +140,7 @@ def main():
         writer_kwargs["purge_step"] = train_global_step
     writer = SummaryWriter(**writer_kwargs)
 
-    model, transform = get_gazelle_model(args.model)
+    model, transform = get_gazelle_model(args.model, finetune_backbone=args.finetune)
     if resume_checkpoint is None:
         print("Initializing from {}".format(args.init_ckpt))
         model.load_gazelle_state_dict(torch.load(args.init_ckpt, weights_only=True)) # initializing from ckpt without inout head
@@ -128,17 +148,37 @@ def main():
         print(f"Resuming training from {args.resume} at epoch {start_epoch}")
     model.cuda()
 
-    for param in model.backbone.parameters(): # freeze backbone
-        param.requires_grad = False
-    print(f"Learnable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+    if args.finetune:
+        backbone_trainable_params = configure_backbone_finetune(model.backbone, args.finetune_layers)
+    else:
+        for param in model.backbone.parameters():
+            param.requires_grad = False
+        backbone_trainable_params = []
+
+    inout_params = [param for name, param in model.named_parameters() if "inout" in name and param.requires_grad]
+    other_head_params = [param for name, param in model.named_parameters() if "inout" not in name and not name.startswith("backbone") and param.requires_grad]
+
+    param_groups = []
+    if inout_params:
+        param_groups.append({'params': inout_params, 'lr': args.lr_inout})
+    if other_head_params:
+        param_groups.append({'params': other_head_params, 'lr': args.lr_non_inout})
+    if args.finetune and backbone_trainable_params:
+        param_groups.append({
+            'params': backbone_trainable_params,
+            'lr': args.backbone_lr,
+            'weight_decay': args.backbone_weight_decay,
+        })
+    if not param_groups:
+        raise RuntimeError("No trainable parameter groups configured for optimizer.")
+    optimizer = torch.optim.Adam(param_groups)
+
+    total_learnable = sum(p.numel() for group in param_groups for p in group['params'])
+    backbone_learnable = sum(p.numel() for p in backbone_trainable_params)
+    print(f"Learnable parameters: {total_learnable} (backbone finetune: {backbone_learnable})")
 
     heatmap_loss_fn = nn.BCELoss()
     inout_loss_fn = nn.BCELoss()
-    param_groups = [
-        {'params': [param for name, param in model.named_parameters() if "inout" in name], 'lr': args.lr_inout},
-        {'params': [param for name, param in model.named_parameters() if "inout" not in name], 'lr': args.lr_non_inout}
-    ]
-    optimizer = torch.optim.Adam(param_groups)
 
     if resume_checkpoint is not None:
         model.load_gazelle_state_dict(resume_checkpoint["model"])

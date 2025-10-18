@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 import math
 import numpy as np
 import warnings
-from typing import Literal, Tuple
+from typing import Literal, Tuple, List, Optional
 from functools import partial
 
 # Abstract Backbone class
@@ -27,6 +27,89 @@ class Backbone(nn.Module, ABC):
 
     def get_transform(self):
         pass
+
+
+def _find_transformer_container(backbone: Backbone) -> Tuple[Optional[nn.Module], List[nn.Module]]:
+    """
+    Identify the module that hosts transformer blocks for a backbone.
+    Returns the container module together with the ordered list of its blocks.
+    """
+    candidates = []
+    for attr in ("model", "_model", "dinov3"):
+        candidate = getattr(backbone, attr, None)
+        if candidate is None:
+            continue
+        candidates.append(candidate)
+        inner = getattr(candidate, "_model", None)
+        if inner is not None:
+            candidates.append(inner)
+
+    visited = set()
+    for module in candidates:
+        if module is None:
+            continue
+        module_id = id(module)
+        if module_id in visited:
+            continue
+        visited.add(module_id)
+        blocks = getattr(module, "blocks", None)
+        if isinstance(blocks, nn.ModuleList) and len(blocks) > 0:
+            return module, list(blocks)
+
+    return None, []
+
+
+def configure_backbone_finetune(backbone: Backbone, num_layers: Optional[int] = None) -> List[nn.Parameter]:
+    """
+    Freeze the backbone and selectively re-enable gradients on the last `num_layers` transformer blocks.
+    When `num_layers` is None or <= 0, the entire backbone is unfrozen.
+    Returns the list of parameters that remain trainable, suitable for setting up optimizer parameter groups.
+    """
+    for param in backbone.parameters():
+        param.requires_grad = False
+
+    container, blocks = _find_transformer_container(backbone)
+    trainable_params: List[nn.Parameter] = []
+    seen_param_ids = set()
+
+    def register_parameter(param: nn.Parameter):
+        if not isinstance(param, nn.Parameter):
+            return
+        param.requires_grad = True
+        pid = id(param)
+        if pid not in seen_param_ids:
+            seen_param_ids.add(pid)
+            trainable_params.append(param)
+
+    def enable_module(module: Optional[nn.Module]):
+        if module is None:
+            return
+        module.requires_grad_(True)
+        for param in module.parameters(recurse=True):
+            register_parameter(param)
+
+    if not blocks:
+        for param in backbone.parameters():
+            register_parameter(param)
+        return trainable_params
+
+    if num_layers is None or num_layers <= 0 or num_layers >= len(blocks):
+        selected_blocks = blocks
+    else:
+        selected_blocks = blocks[-num_layers:]
+
+    for block in selected_blocks:
+        enable_module(block)
+
+    for attr in ("norm", "head", "fc_norm"):
+        if container is not None and hasattr(container, attr):
+            enable_module(getattr(container, attr))
+
+    for attr in ("cls_token", "pos_embed"):
+        if container is not None and hasattr(container, attr):
+            register_parameter(getattr(container, attr))
+
+    return trainable_params
 
 
 # Official DINOv2 backbones from torch hub (https://github.com/facebookresearch/dinov2#pretrained-backbones-via-pytorch-hub)
