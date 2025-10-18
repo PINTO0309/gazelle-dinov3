@@ -66,7 +66,8 @@ python scripts/train_gazefollow.py \
 --lr 1e-3 \
 --n_workers 50 \
 --use_amp \
---finetune
+--finetune \
+--finetune_layers 2
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -112,7 +113,8 @@ uv run python scripts/train_gazefollow.py \
 --lr 1e-3 \
 --n_workers 16 \
 --use_amp \
---finetune
+--finetune \
+--finetune_layers 2
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -158,7 +160,8 @@ uv run python scripts/train_gazefollow.py \
 --lr 1e-3 \
 --n_workers 8 \
 --use_amp \
---finetune
+--finetune \
+--finetune_layers 2
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -204,7 +207,8 @@ uv run python scripts/train_gazefollow.py \
 --lr 1e-3 \
 --n_workers 8 \
 --use_amp \
---finetune
+--finetune \
+--finetune_layers 2
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
