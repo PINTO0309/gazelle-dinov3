@@ -73,7 +73,7 @@ class GazeLLE(nn.Module):
 
         x = x.reshape(x.shape[0], self.featmap_h, self.featmap_w, x.shape[2]).permute(0, 3, 1, 2) # b (h w) c -> b c h w
         x = self.heatmap_head(x).squeeze(dim=1)
-        x = torchvision.transforms.functional.resize(x, self.out_size)
+        x = torchvision.transforms.functional.resize(x, self.out_size, antialias=False)
         heatmap_preds = utils.split_tensors(x, num_ppl_per_img) # resplit per image
 
         return {"heatmap": heatmap_preds, "inout": inout_preds if self.inout else None}
@@ -170,7 +170,7 @@ class GazeLLE_ONNX(nn.Module):
         std = torch.tensor([0.229,0.224,0.225], dtype=torch.float32).reshape([1,3,1,1])
 
         image_rgb = torch.cat([image_bgr[:, 2:3, ...], image_bgr[:, 1:2, ...], image_bgr[:, 0:1, ...]], dim=1)
-        image_rgb = F.resize(img=image_rgb, size=(640, 640))
+        image_rgb = F.resize(img=image_rgb, size=(640, 640), antialias=False)
         image_rgb = image_rgb * 0.003921569
         image_rgb = (image_rgb - mean) / std
 
@@ -198,7 +198,7 @@ class GazeLLE_ONNX(nn.Module):
 
         x = x.reshape(x.shape[0], self.featmap_h, self.featmap_w, x.shape[2]).permute(0, 3, 1, 2) # b (h w) c -> b c h w
         x = self.heatmap_head(x).squeeze(dim=1)
-        x = torchvision.transforms.functional.resize(x, self.out_size)
+        x = torchvision.transforms.functional.resize(x, self.out_size, antialias=False)
         heatmap_preds = x
 
         return {"heatmap": heatmap_preds, "inout": inout_preds if self.inout else None}
