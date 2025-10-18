@@ -250,16 +250,17 @@ uv run python scripts/train_gazefollow.py \
 --lr 1e-3 \
 --n_workers 8 \
 --use_amp \
---finetune
+--finetune \
+--finetune_layers 4
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
 ┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
 | Total params       |      88.50 |
-| Trainable params   |      17.01 |
-| Backbone trainable |      14.18 |
+| Trainable params   |      31.19 |
+| Backbone trainable |      28.36 |
 | Head trainable     |       2.83 |
-| Frozen params      |      71.49 |
+| Frozen params      |      57.31 |
 └--------------------┴------------┘
 ```
 
