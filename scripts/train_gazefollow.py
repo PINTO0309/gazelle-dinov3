@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter('ignore')
 import argparse
 from datetime import datetime
 import numpy as np
@@ -78,7 +80,7 @@ def main():
 
         scheduler.step()
 
-        ckpt_path = os.path.join(exp_dir, 'epoch_{}.pt'.format(epoch))
+        ckpt_path = os.path.join(exp_dir, f'epoch_{epoch:03d}.pt')
         torch.save(model.get_gazelle_state_dict(), ckpt_path)
         print("Saved checkpoint to {}".format(ckpt_path))
 
@@ -113,11 +115,13 @@ def main():
         writer.add_scalar("eval/min_l2", epoch_min_l2, epoch)
         writer.add_scalar("eval/avg_l2", epoch_avg_l2, epoch)
         writer.add_scalar("train/epoch", epoch, epoch)
-        print("EVAL EPOCH {}: AUC={}, Min L2={}, Avg L2={}".format(epoch, round(epoch_auc, 4), round(epoch_min_l2, 4), round(epoch_avg_l2, 4)))
+        print(f"EVAL EPOCH {epoch:03d}: AUC={round(epoch_auc, 4)}, Min L2={round(epoch_min_l2, 4)}, Avg L2={round(epoch_avg_l2, 4)}")
 
         if epoch_min_l2 < best_min_l2:
             best_min_l2 = epoch_min_l2
             best_epoch = epoch
+            ckpt_path = os.path.join(exp_dir, f'best.pt')
+            torch.save(model.get_gazelle_state_dict(), ckpt_path)
 
     print("Completed training. Best Min L2 of {} obtained at epoch {}".format(round(best_min_l2, 4), best_epoch))
     writer.close()

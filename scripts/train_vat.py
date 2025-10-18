@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter('ignore')
 import argparse
 from datetime import datetime
 import numpy as np
@@ -60,6 +62,7 @@ def main():
     optimizer = torch.optim.Adam(param_groups)
 
     train_global_step = 0
+    best_inout_ap = 0.0
 
     for epoch in range(args.max_epochs):
         # TRAIN EPOCH
@@ -86,7 +89,7 @@ def main():
                 print("TRAIN EPOCH {}, iter {}/{}, loss={}".format(epoch, cur_iter, len(train_dl), round(loss.item(), 4)))
             train_global_step += 1
 
-        ckpt_path = os.path.join(exp_dir, 'epoch_{}.pt'.format(epoch))
+        ckpt_path = os.path.join(exp_dir, f'epoch_{epoch:03d}.pt')
         torch.save(model.get_gazelle_state_dict(), ckpt_path)
         print("Saved checkpoint to {}".format(ckpt_path))
 
@@ -121,7 +124,11 @@ def main():
         writer.add_scalar("eval/auc", epoch_auc, epoch)
         writer.add_scalar("eval/l2", epoch_l2, epoch)
         writer.add_scalar("eval/inout_ap", epoch_inout_ap, epoch)
-        print("EVAL EPOCH {}: AUC={}, L2={}, Inout AP={}".format(epoch, round(epoch_auc, 4), round(epoch_l2, 4), round(epoch_inout_ap, 4)))
+        print(f"EVAL EPOCH {epoch:03d}: AUC={round(epoch_auc, 4)}, L2={round(epoch_l2, 4)}, Inout AP={round(epoch_inout_ap, 4)}")
+
+        if best_inout_ap < epoch_inout_ap:
+            ckpt_path = os.path.join(exp_dir, f'best.pt')
+            torch.save(model.get_gazelle_state_dict(), ckpt_path)
 
     writer.close()
 
