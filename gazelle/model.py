@@ -203,9 +203,8 @@ class GazeLLE_ONNX(nn.Module):
 
         x = x.reshape(x.shape[0], self.featmap_h, self.featmap_w, x.shape[2]).permute(0, 3, 1, 2) # b (h w) c -> b c h w
         x = self.heatmap_head(x)
-        x = x.squeeze(dim=1)
-        x = F.resize(x, self.out_size, antialias=False)
-        heatmap_preds = x
+        heatmap_preds = torch.nn.functional.interpolate(x, self.out_size, antialias=False)
+        heatmap_preds = heatmap_preds[:, 0, ...]
 
         return {"heatmap": heatmap_preds, "inout": inout_preds if self.inout else None}
 
