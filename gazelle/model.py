@@ -334,6 +334,15 @@ def get_gazelle_model(model_name: str, onnx_export: bool=False, finetune_backbon
             patch_size=16,
             onnx_export=onnx_export,
         ),
+        "gazelle_dinov3_vitb16": lambda: gazelle_dinov3_vitb16(
+            weights_path="./ckpts/dinov3_vitb16_pretrain_lvd1689m-73cec8be.pth",
+            interaction_indexes=[5, 8, 11],
+            finetune=finetune_backbone,
+            embed_dim=192,
+            num_heads=3,
+            patch_size=16,
+            onnx_export=onnx_export,
+        ),
     }
     if model_name not in factory:
         raise ValueError("invalid model name")
@@ -462,6 +471,31 @@ def gazelle_dinov3_vits16plus(
 ):
     backbone = DinoV3Backbone(
         model_name="dinov3_vits16plus",
+        weights_path=weights_path,
+        interaction_indexes=interaction_indexes,
+        finetune=finetune,
+        embed_dim=embed_dim,
+        num_heads=num_heads,
+        patch_size=patch_size,
+    )
+    transform = backbone.get_transform((640, 640))
+    if not onnx_export:
+        model = GazeLLE(backbone, in_size=(640, 640))
+    else:
+        model = GazeLLE_ONNX(backbone, in_size=(640, 640))
+    return model, transform
+
+def gazelle_dinov3_vitb16(
+    weights_path: str,
+    interaction_indexes: List[int],
+    finetune: bool,
+    embed_dim: int,
+    num_heads: int,
+    patch_size: int,
+    onnx_export: bool
+):
+    backbone = DinoV3Backbone(
+        model_name="dinov3_vitb16",
         weights_path=weights_path,
         interaction_indexes=interaction_indexes,
         finetune=finetune,

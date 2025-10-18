@@ -468,7 +468,7 @@ class DinoV3Backbone(Backbone):
         super(DinoV3Backbone, self).__init__()
 
         print(f'model_name: {model_name}')
-        if 'vits' in model_name:
+        if 'vits' in model_name or 'vitb' in model_name:
             self.dinov3 = torch.hub.load(
                 repo_or_dir='facebookresearch/dinov3:7bf81b2a0eb0e330dbc84a5d3d31d86ed3cdbd84',
                 model=model_name,
