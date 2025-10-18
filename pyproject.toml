@@ -1,0 +1,40 @@
+[project]
+name = "gazelle-dinov3"
+version = "0.1.0"
+description = "Gaze-LLE-DINOv3: Gaze Target Estimation via Large-Scale Learned Encoders with DINOv3"
+readme = "README.md"
+requires-python = "==3.11.12"
+dependencies = [
+    "ai-edge-litert==2.0.2",
+    "calflops==0.3.2",
+    "coremltools==9.0b1",
+    "faster-coco-eval==1.6.7",
+    "gdown==5.2.0",
+    "matplotlib==3.10.7",
+    "numpy==1.26.4",
+    "onnx==1.19.0",
+    "onnx-graphsurgeon==0.5.8",
+    "onnx2tf==1.28.2",
+    "onnxruntime-gpu==1.23.0",
+    "onnxsim==0.4.30",
+    "onnxslim==0.1.69",
+    "pybind11==3.0.1",
+    "pyyaml==6.0.3",
+    "scikit-learn==1.7.2",
+    "scipy==1.16.2",
+    "sit4onnx==1.0.10",
+    "snc4onnx==1.0.14",
+    "sor4onnx==1.0.7",
+    "tensorboard==2.20.0",
+    "termcolor==3.1.0",
+    "timm==1.0.20",
+    "torch==2.5.1",
+    "torchmetrics==1.8.2",
+    "torchvision==0.20.1",
+    "transformers==4.56.2",
+    "xformers>=0.0.29.post1",
+]
+[tool.uv]
+override-dependencies = [
+    "sympy>=1.13.1,<1.14",
+]

@@ -1,0 +1,7 @@
+data.tar.gz
+data/gazefollow_extended/
+gazefollow_extended.tar.gz
+gazefollow_extended_gazelle.tar.gz
+*.pt*
+__pycache__/
+runs/
