@@ -50,6 +50,8 @@ for m, params in models.items():
     filename_wo_ext = os.path.splitext(os.path.basename(params[0]))[0]
     h = int(params[2])
     w = int(params[3])
+    oh = str(model.out_size[0])
+    ow = str(model.out_size[1])
     onnx_file = f"{filename_wo_ext}_1x3x{h}x{w}_1x{num_heads}x4.onnx"
     images = torch.randn(1, 3, h, w).cpu()
     bboxes = torch.randn(1, num_heads, 4).cpu()
@@ -59,7 +61,7 @@ for m, params in models.items():
         ]
         dynamic_axes = {
             'bboxes_x1y1x2y2' : {1: 'heads'},
-            'heatmap': {0: 'heads'}
+            'heatmap': {0: 'heads', 1: oh, 2: ow},
         }
     else:
         outputs = [
@@ -68,7 +70,7 @@ for m, params in models.items():
         ]
         dynamic_axes = {
             'bboxes_x1y1x2y2' : {1: 'heads'},
-            'heatmap': {0: 'heads'},
+            'heatmap': {0: 'heads', 1: oh, 2: ow},
             'inout': {0: 'heads'},
         }
 
