@@ -7,6 +7,7 @@ import os
 import random
 import sys
 from pathlib import Path
+import glob
 from sklearn.metrics import average_precision_score
 import torch
 import torch.nn as nn
@@ -96,6 +97,20 @@ def save_checkpoint(path, model, optimizer, epoch, train_global_step, best_inout
         "rng_state": _collect_rng_state(),
     }
     torch.save(checkpoint, path)
+
+
+def prune_epoch_checkpoints(exp_dir, keep=10):
+    pattern = os.path.join(exp_dir, "epoch_*.pt")
+    checkpoints = sorted(glob.glob(pattern))
+    if len(checkpoints) <= keep:
+        return
+    to_delete = checkpoints[:-keep]
+    for ckpt in to_delete:
+        try:
+            os.remove(ckpt)
+            print(f"Removed old checkpoint {ckpt}")
+        except OSError as error:
+            print(f"WARNING: unable to remove old checkpoint {ckpt}: {error}")
 
 
 def main():
@@ -276,9 +291,11 @@ def main():
             vars(args),
         )
         print(f"Saved checkpoint to {ckpt_path}")
+        prune_epoch_checkpoints(exp_dir, keep=10)
 
         if is_best:
-            best_ckpt_path = os.path.join(exp_dir, 'best.pt')
+            best_filename = f"best_{epoch:03d}_{best_inout_ap:.4f}.pt"
+            best_ckpt_path = os.path.join(exp_dir, best_filename)
             save_checkpoint(
                 best_ckpt_path,
                 model,
@@ -291,6 +308,22 @@ def main():
                 log_dir,
                 vars(args),
             )
+            print(f"Saved best checkpoint to {best_ckpt_path}")
+            legacy_best = os.path.join(exp_dir, "best.pt")
+            if os.path.exists(legacy_best) and legacy_best != best_ckpt_path:
+                try:
+                    os.remove(legacy_best)
+                    print(f"Removed old checkpoint {legacy_best}")
+                except OSError as error:
+                    print(f"WARNING: unable to remove old checkpoint {legacy_best}: {error}")
+            for best_path in glob.glob(os.path.join(exp_dir, "best_*.pt")):
+                if best_path == best_ckpt_path:
+                    continue
+                try:
+                    os.remove(best_path)
+                    print(f"Removed old checkpoint {best_path}")
+                except OSError as error:
+                    print(f"WARNING: unable to remove old checkpoint {best_path}: {error}")
 
     writer.close()
 
