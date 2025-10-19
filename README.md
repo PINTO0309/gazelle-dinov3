@@ -1,5 +1,8 @@
 # gazelle-dinov3
 
+> [!warning]
+> **October 19, 2025 :** I am continuing to experiment to achieve better accuracy, so this repository is still a work in progress.
+
 ## Installation
 ```bash
 git clone https://github.com/PINTO0309/gazelle-dinov3.git && cd gazelle-dinov3
