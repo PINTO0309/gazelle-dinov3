@@ -28,6 +28,7 @@ Dwonloads Distill-DINOv3 pretrain pt to `ckpts`.
 Dwonloads DINOv3 pretrain pth: From https://github.com/facebookresearch/dinov3 to `ckpts`.
 - `dinov3_vits16_pretrain_lvd1689m-08c60483.pth`
 - `dinov3_vits16plus_pretrain_lvd1689m-4057cbaa.pth`
+- `dinov3_vitb16_pretrain_lvd1689m-73cec8be.pth`
 
 ## Training
 
@@ -43,7 +44,8 @@ uv run python scripts/train_gazefollow.py \
 --batch_size 64 \
 --lr 1e-3 \
 --n_workers 16 \
---use_amp
+--use_amp \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -67,7 +69,8 @@ python scripts/train_gazefollow.py \
 --n_workers 50 \
 --use_amp \
 --finetune \
---finetune_layers 2
+--finetune_layers 2 \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -90,7 +93,8 @@ uv run python scripts/train_gazefollow.py \
 --batch_size 32 \
 --lr 1e-3 \
 --n_workers 16 \
---use_amp
+--use_amp \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -114,7 +118,8 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 16 \
 --use_amp \
 --finetune \
---finetune_layers 2
+--finetune_layers 2 \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -137,7 +142,8 @@ uv run python scripts/train_gazefollow.py \
 --batch_size 8 \
 --lr 1e-3 \
 --n_workers 8 \
---use_amp
+--use_amp \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -161,7 +167,8 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp \
 --finetune \
---finetune_layers 2
+--finetune_layers 2 \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -184,7 +191,8 @@ uv run python scripts/train_gazefollow.py \
 --batch_size 8 \
 --lr 1e-3 \
 --n_workers 8 \
---use_amp
+--use_amp \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -208,7 +216,8 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp \
 --finetune \
---finetune_layers 2
+--finetune_layers 2 \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -231,7 +240,8 @@ uv run python scripts/train_gazefollow.py \
 --batch_size 8 \
 --lr 1e-3 \
 --n_workers 8 \
---use_amp
+--use_amp \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -255,7 +265,8 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp \
 --finetune \
---finetune_layers 4
+--finetune_layers 4 \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃

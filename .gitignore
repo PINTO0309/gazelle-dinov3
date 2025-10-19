@@ -4,6 +4,7 @@ data/gazefollow_extended/
 *.engine
 *.profile
 *.tar.gz
+*.whl
 __pycache__/
 runs/
 AUC_*.txt

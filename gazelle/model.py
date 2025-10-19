@@ -10,7 +10,16 @@ import torchvision.transforms.functional as F
 from typing import List, Dict
 
 class GazeLLE(nn.Module):
-    def __init__(self, backbone: DinoV2Backbone | DinoV3Backbone, inout=False, dim=256, num_layers=3, in_size=(448, 448), out_size=(64, 64)):
+    def __init__(
+        self,
+        backbone: DinoV2Backbone | DinoV3Backbone,
+        inout=False,
+        dim=256,
+        num_layers=3,
+        in_size=(448, 448),
+        out_size=(64, 64),
+        apply_sigmoid=True,
+    ):
         super().__init__()
         self.backbone = backbone
         self.dim = dim
@@ -19,6 +28,7 @@ class GazeLLE(nn.Module):
         self.in_size = in_size
         self.out_size = out_size
         self.inout = inout
+        self.apply_sigmoid = apply_sigmoid
 
         self.linear = nn.Conv2d(backbone.get_dimension(), self.dim, 1)
         self.head_token = nn.Embedding(1, self.dim)
@@ -36,7 +46,6 @@ class GazeLLE(nn.Module):
         self.heatmap_head = nn.Sequential(
             nn.ConvTranspose2d(dim, dim, kernel_size=2, stride=2),
             nn.Conv2d(dim, 1, kernel_size=1, bias=False),
-            nn.Sigmoid()
         )
         if self.inout:
             self.inout_head = nn.Sequential(
@@ -75,6 +84,8 @@ class GazeLLE(nn.Module):
 
         x = x.reshape(x.shape[0], self.featmap_h, self.featmap_w, x.shape[2]).permute(0, 3, 1, 2) # b (h w) c -> b c h w
         x = self.heatmap_head(x)
+        if self.apply_sigmoid:
+            x = torch.sigmoid(x)
         x = x.squeeze(dim=1)
         x = F.resize(x, self.out_size, antialias=False)
         heatmap_preds = utils.split_tensors(x, num_ppl_per_img) # resplit per image
@@ -132,7 +143,16 @@ class GazeLLE(nn.Module):
 
 
 class GazeLLE_ONNX(nn.Module):
-    def __init__(self, backbone: DinoV2Backbone | DinoV3Backbone, inout=False, dim=256, num_layers=3, in_size=(448, 448), out_size=(64, 64)):
+    def __init__(
+        self,
+        backbone: DinoV2Backbone | DinoV3Backbone,
+        inout=False,
+        dim=256,
+        num_layers=3,
+        in_size=(448, 448),
+        out_size=(64, 64),
+        apply_sigmoid=True,
+    ):
         super().__init__()
         self.backbone: nn.Module = backbone
         self.dim = dim
@@ -141,6 +161,7 @@ class GazeLLE_ONNX(nn.Module):
         self.in_size = in_size
         self.out_size = out_size
         self.inout = inout
+        self.apply_sigmoid = apply_sigmoid
 
         self.linear = nn.Conv2d(backbone.get_dimension(), self.dim, 1)
         self.register_buffer("pos_embed", positionalencoding2d(self.dim, self.featmap_h, self.featmap_w).squeeze(dim=0).squeeze(dim=0))
@@ -156,7 +177,6 @@ class GazeLLE_ONNX(nn.Module):
         self.heatmap_head = nn.Sequential(
             nn.ConvTranspose2d(dim, dim, kernel_size=2, stride=2),
             nn.Conv2d(dim, 1, kernel_size=1, bias=False),
-            nn.Sigmoid()
         )
         self.head_token = nn.Embedding(1, self.dim)
         if self.inout:
@@ -203,6 +223,8 @@ class GazeLLE_ONNX(nn.Module):
 
         x = x.reshape(x.shape[0], self.featmap_h, self.featmap_w, x.shape[2]).permute(0, 3, 1, 2) # b (h w) c -> b c h w
         x = self.heatmap_head(x)
+        if self.apply_sigmoid:
+            x = torch.sigmoid(x)
         heatmap_preds = torch.nn.functional.interpolate(x, self.out_size, antialias=False)
         heatmap_preds = heatmap_preds[:, 0, ...]
 
@@ -292,13 +314,13 @@ def positionalencoding2d(d_model, height, width):
 
 
 # models
-def get_gazelle_model(model_name: str, onnx_export: bool=False, finetune_backbone: bool=False):
+def get_gazelle_model(model_name: str, onnx_export: bool=False, finetune_backbone: bool=False, apply_sigmoid: bool=True):
     factory = {
         # DINOv2
-        "gazelle_dinov2_vitb14": lambda: gazelle_dinov2_vitb14(onnx_export),
-        "gazelle_dinov2_vitl14": lambda: gazelle_dinov2_vitl14(onnx_export),
-        "gazelle_dinov2_vitb14_inout": lambda: gazelle_dinov2_vitb14_inout(onnx_export),
-        "gazelle_dinov2_vitl14_inout": lambda: gazelle_dinov2_vitl14_inout(onnx_export),
+        "gazelle_dinov2_vitb14": lambda: gazelle_dinov2_vitb14(onnx_export, apply_sigmoid),
+        "gazelle_dinov2_vitl14": lambda: gazelle_dinov2_vitl14(onnx_export, apply_sigmoid),
+        "gazelle_dinov2_vitb14_inout": lambda: gazelle_dinov2_vitb14_inout(onnx_export, apply_sigmoid),
+        "gazelle_dinov2_vitl14_inout": lambda: gazelle_dinov2_vitl14_inout(onnx_export, apply_sigmoid),
 
         # DINOv3
         "gazelle_dinov3_vit_tiny": lambda: gazelle_dinov3_vit_tiny(
@@ -309,6 +331,7 @@ def get_gazelle_model(model_name: str, onnx_export: bool=False, finetune_backbon
             num_heads=3,
             patch_size=16,
             onnx_export=onnx_export,
+            apply_sigmoid=apply_sigmoid,
         ),
         "gazelle_dinov3_vit_tinyplus": lambda: gazelle_dinov3_vit_tinyplus(
             weights_path="./ckpts/vittplus_distill.pt",
@@ -318,6 +341,7 @@ def get_gazelle_model(model_name: str, onnx_export: bool=False, finetune_backbon
             num_heads=4,
             patch_size=16,
             onnx_export=onnx_export,
+            apply_sigmoid=apply_sigmoid,
         ),
         "gazelle_dinov3_vits16": lambda: gazelle_dinov3_vits16(
             weights_path="./ckpts/dinov3_vits16_pretrain_lvd1689m-08c60483.pth",
@@ -327,6 +351,7 @@ def get_gazelle_model(model_name: str, onnx_export: bool=False, finetune_backbon
             num_heads=3,
             patch_size=16,
             onnx_export=onnx_export,
+            apply_sigmoid=apply_sigmoid,
         ),
         "gazelle_dinov3_vits16plus": lambda: gazelle_dinov3_vits16plus(
             weights_path="./ckpts/dinov3_vits16plus_pretrain_lvd1689m-4057cbaa.pth",
@@ -336,6 +361,7 @@ def get_gazelle_model(model_name: str, onnx_export: bool=False, finetune_backbon
             num_heads=3,
             patch_size=16,
             onnx_export=onnx_export,
+            apply_sigmoid=apply_sigmoid,
         ),
         "gazelle_dinov3_vitb16": lambda: gazelle_dinov3_vitb16(
             weights_path="./ckpts/dinov3_vitb16_pretrain_lvd1689m-73cec8be.pth",
@@ -345,46 +371,47 @@ def get_gazelle_model(model_name: str, onnx_export: bool=False, finetune_backbon
             num_heads=3,
             patch_size=16,
             onnx_export=onnx_export,
+            apply_sigmoid=apply_sigmoid,
         ),
     }
     if model_name not in factory:
         raise ValueError("invalid model name")
     return factory[model_name]()
 
-def gazelle_dinov2_vitb14(onnx_export):
+def gazelle_dinov2_vitb14(onnx_export, apply_sigmoid=True):
     backbone = DinoV2Backbone('dinov2_vitb14')
     transform = backbone.get_transform((448, 448))
     if not onnx_export:
-        model = GazeLLE(backbone)
+        model = GazeLLE(backbone, apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone)
+        model = GazeLLE_ONNX(backbone, apply_sigmoid=apply_sigmoid)
     return model, transform
 
-def gazelle_dinov2_vitl14(onnx_export):
+def gazelle_dinov2_vitl14(onnx_export, apply_sigmoid=True):
     backbone = DinoV2Backbone('dinov2_vitl14')
     transform = backbone.get_transform((448, 448))
     if not onnx_export:
-        model = GazeLLE(backbone)
+        model = GazeLLE(backbone, apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone)
+        model = GazeLLE_ONNX(backbone, apply_sigmoid=apply_sigmoid)
     return model, transform
 
-def gazelle_dinov2_vitb14_inout(onnx_export):
+def gazelle_dinov2_vitb14_inout(onnx_export, apply_sigmoid=True):
     backbone = DinoV2Backbone('dinov2_vitb14')
     transform = backbone.get_transform((448, 448))
     if not onnx_export:
-        model = GazeLLE(backbone)
+        model = GazeLLE(backbone, apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone, inout=True)
+        model = GazeLLE_ONNX(backbone, inout=True, apply_sigmoid=apply_sigmoid)
     return model, transform
 
-def gazelle_dinov2_vitl14_inout(onnx_export):
+def gazelle_dinov2_vitl14_inout(onnx_export, apply_sigmoid=True):
     backbone = DinoV2Backbone('dinov2_vitl14')
     transform = backbone.get_transform((448, 448))
     if not onnx_export:
-        model = GazeLLE(backbone)
+        model = GazeLLE(backbone, apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone, inout=True)
+        model = GazeLLE_ONNX(backbone, inout=True, apply_sigmoid=apply_sigmoid)
     return model, transform
 
 
@@ -395,7 +422,8 @@ def gazelle_dinov3_vit_tiny(
     embed_dim: int,
     num_heads: int,
     patch_size: int,
-    onnx_export: bool
+    onnx_export: bool,
+    apply_sigmoid: bool,
 ):
     backbone = DinoV3Backbone(
         model_name="vit_tiny",
@@ -408,9 +436,9 @@ def gazelle_dinov3_vit_tiny(
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640))
+        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone, in_size=(640, 640))
+        model = GazeLLE_ONNX(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     return model, transform
 
 def gazelle_dinov3_vit_tinyplus(
@@ -420,7 +448,8 @@ def gazelle_dinov3_vit_tinyplus(
     embed_dim: int,
     num_heads: int,
     patch_size: int,
-    onnx_export: bool
+    onnx_export: bool,
+    apply_sigmoid: bool,
 ):
     backbone = DinoV3Backbone(
         model_name="vit_tinyplus",
@@ -433,9 +462,9 @@ def gazelle_dinov3_vit_tinyplus(
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640))
+        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone, in_size=(640, 640))
+        model = GazeLLE_ONNX(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     return model, transform
 
 def gazelle_dinov3_vits16(
@@ -445,7 +474,8 @@ def gazelle_dinov3_vits16(
     embed_dim: int,
     num_heads: int,
     patch_size: int,
-    onnx_export: bool
+    onnx_export: bool,
+    apply_sigmoid: bool,
 ):
     backbone = DinoV3Backbone(
         model_name="dinov3_vits16",
@@ -458,9 +488,9 @@ def gazelle_dinov3_vits16(
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640))
+        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone, in_size=(640, 640))
+        model = GazeLLE_ONNX(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     return model, transform
 
 def gazelle_dinov3_vits16plus(
@@ -470,7 +500,8 @@ def gazelle_dinov3_vits16plus(
     embed_dim: int,
     num_heads: int,
     patch_size: int,
-    onnx_export: bool
+    onnx_export: bool,
+    apply_sigmoid: bool,
 ):
     backbone = DinoV3Backbone(
         model_name="dinov3_vits16plus",
@@ -483,9 +514,9 @@ def gazelle_dinov3_vits16plus(
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640))
+        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone, in_size=(640, 640))
+        model = GazeLLE_ONNX(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     return model, transform
 
 def gazelle_dinov3_vitb16(
@@ -495,7 +526,8 @@ def gazelle_dinov3_vitb16(
     embed_dim: int,
     num_heads: int,
     patch_size: int,
-    onnx_export: bool
+    onnx_export: bool,
+    apply_sigmoid: bool,
 ):
     backbone = DinoV3Backbone(
         model_name="dinov3_vitb16",
@@ -508,7 +540,7 @@ def gazelle_dinov3_vitb16(
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640))
+        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone, in_size=(640, 640))
+        model = GazeLLE_ONNX(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     return model, transform
