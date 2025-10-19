@@ -86,7 +86,7 @@ uv run python scripts/train_gazefollow.py \
 --model_name gazelle_dinov3_vit_tinyplus \
 --exp_name gazelle_dinov3_m_ft_bcelogits_prog \
 --log_iter 50 \
---max_epochs 100 \
+--max_epochs 45 \
 --batch_size 8 \
 --lr 1e-3 \
 --n_workers 8 \
@@ -115,7 +115,7 @@ uv run python scripts/train_gazefollow.py \
 --model_name gazelle_dinov3_vits16 \
 --exp_name gazelle_dinov3_l_ft \
 --log_iter 10 \
---max_epochs 20 \
+--max_epochs 40 \
 --batch_size 8 \
 --lr 1e-3 \
 --n_workers 8 \
