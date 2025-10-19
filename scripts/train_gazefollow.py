@@ -133,7 +133,7 @@ def print_param_summary(rows):
 
 
 def main():
-    resume_checkpoint = torch.load(args.resume, map_location='cpu') if args.resume else None
+    resume_checkpoint = torch.load(args.resume, map_location='cpu', weights_only=False) if args.resume else None
     if resume_checkpoint is not None and "model" not in resume_checkpoint:
         raise ValueError(f"The checkpoint at {args.resume} does not contain full training state required for resuming.")
 
