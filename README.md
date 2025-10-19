@@ -224,10 +224,10 @@ High accuracy is not important to me at all. I'm only interested in whether the 
 - https://github.com/fkryan/gazelle
   ```bibtex
   @inproceedings{ryan2025gazelle,
-      author = {Ryan, Fiona and Bati, Ajay and Lee, Sangmin and Bolya, Daniel and Hoffman, Judy and Rehg, James M.},
-      title = {Gaze-LLE: Gaze Target Estimation via Large-Scale Learned Encoders},
-      year = {2025},
-      booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}
+    author = {Ryan, Fiona and Bati, Ajay and Lee, Sangmin and Bolya, Daniel and Hoffman, Judy and Rehg, James M.},
+    title = {Gaze-LLE: Gaze Target Estimation via Large-Scale Learned Encoders},
+    year = {2025},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}
   }
   ```
 - https://github.com/Intellindust-AI-Lab/DEIMv2
