@@ -74,7 +74,7 @@ uv run python scripts/train_gazefollow.py \
 --exp_name gazelle_dinov3_m_ft \
 --log_iter 10 \
 --max_epochs 100 \
---batch_size 32 \
+--batch_size 16 \
 --lr 1e-3 \
 --n_workers 16 \
 --use_amp \
