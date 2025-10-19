@@ -1,10 +1,9 @@
-data.tar.gz
 data/gazefollow_extended/
-gazefollow_extended.tar.gz
-gazefollow_extended_gazelle.tar.gz
 *.pt*
 *.onnx
 *.engine
 *.profile
+*.tar.gz
 __pycache__/
 runs/
+AUC_*.txt
