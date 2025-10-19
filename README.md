@@ -209,6 +209,8 @@ uv run python scripts/train_gazefollow.py \
 
   |Variant|Param<br>Backbone+Head|AUC ⬆️|Min L2 ⬇️|Avg L2 ⬇️|
   |:-:|:-:|-:|-:|-:|
+  |Gaze-LLE (ViT-B)|88.8M|0.956|0.045|0.104|
+  |Gaze-LLE (ViT-L)|302.9M|0.958|0.041|0.099|
   |S|8.17M||||
   |M|12.37M||||
   |L|24.33M||||
