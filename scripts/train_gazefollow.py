@@ -45,6 +45,8 @@ parser.add_argument('--disable_sigmoid', action='store_true', help='predict raw 
 parser.add_argument('--initial_freeze_epochs', type=int, default=10, help='number of epochs to keep initial finetune_layers before unfreezing more backbone layers')
 parser.add_argument('--unfreeze_interval', type=int, default=3, help='epoch interval between progressive backbone unfreezing steps after initial_freeze_epochs')
 parser.add_argument('--disable_progressive_unfreeze', action='store_true', help='keep backbone finetune_layers fixed for entire training')
+parser.add_argument('--distill_teacher', type=str, default='gazelle_dinov3_vits16plus', help='teacher model name for knowledge distillation (only used when distill_weight > 0)')
+parser.add_argument('--distill_weight', type=float, default=0.0, help='weight applied to the teacher loss; set <= 0 to disable distillation')
 args = parser.parse_args()
 
 
@@ -157,7 +159,9 @@ def main():
                 print(f"WARNING: resume checkpoint stored {name}={saved_value}, overriding current value {current_value}.")
             setattr(args, name, saved_value)
 
-        for field in ("use_amp", "finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay", "disable_sigmoid", "initial_freeze_epochs", "unfreeze_interval", "disable_progressive_unfreeze"):
+        for field in ("use_amp", "finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay",
+                      "disable_sigmoid", "initial_freeze_epochs", "unfreeze_interval", "disable_progressive_unfreeze",
+                      "distill_teacher", "distill_weight"):
             restore_arg(field)
 
         timestamp = resume_checkpoint.get("timestamp") or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -190,6 +194,27 @@ def main():
         apply_sigmoid=not args.disable_sigmoid,
     )
     model.cuda()
+
+    teacher_model = None
+    distill_loss_fn = nn.MSELoss()
+    distill_enabled = args.distill_weight is not None and args.distill_weight > 0
+    if distill_enabled:
+        if not args.distill_teacher:
+            raise ValueError("distill_weight > 0 but no distill_teacher specified.")
+        if args.distill_teacher == args.model_name:
+            print("WARNING: distill_teacher matches student model; distillation likely ineffective but continuing.")
+        teacher_model, _ = get_gazelle_model(
+            args.distill_teacher,
+            finetune_backbone=False,
+            apply_sigmoid=not args.disable_sigmoid,
+        )
+        teacher_model.cuda()
+        teacher_model.eval()
+        for param in teacher_model.parameters():
+            param.requires_grad_(False)
+        print(f"Knowledge distillation enabled: teacher={args.distill_teacher}, weight={args.distill_weight}")
+    else:
+        print("Knowledge distillation disabled.")
 
     total_backbone_blocks = get_backbone_num_blocks(model.backbone) if args.finetune else 0
     base_finetune_layers = 0
@@ -323,12 +348,30 @@ def main():
             imgs, bboxes, gazex, gazey, inout, heights, widths, heatmaps = batch
 
             optimizer.zero_grad()
+            imgs_cuda = imgs.cuda()
+            bbox_inputs = [[bbox] for bbox in bboxes]
             with autocast('cuda', enabled=args.use_amp):
-                preds = model({"images": imgs.cuda(), "bboxes": [[bbox] for bbox in bboxes]})
+                preds = model({"images": imgs_cuda, "bboxes": bbox_inputs})
                 heatmap_preds = torch.stack(preds['heatmap']).squeeze(dim=1)
             loss_inputs = heatmap_preds.float() if args.use_amp else heatmap_preds
             loss_targets = heatmaps.cuda()
             loss = loss_fn(loss_inputs, loss_targets)
+
+            if distill_enabled:
+                with torch.no_grad():
+                    with autocast('cuda', enabled=args.use_amp):
+                        teacher_preds = teacher_model({"images": imgs_cuda, "bboxes": bbox_inputs})
+                        teacher_heatmaps = torch.stack(teacher_preds['heatmap']).squeeze(dim=1)
+                if args.use_amp:
+                    teacher_heatmaps = teacher_heatmaps.float()
+                if args.disable_sigmoid:
+                    student_for_distill = torch.sigmoid(loss_inputs)
+                    teacher_for_distill = torch.sigmoid(teacher_heatmaps)
+                else:
+                    student_for_distill = loss_inputs
+                    teacher_for_distill = teacher_heatmaps
+                distill_loss = distill_loss_fn(student_for_distill, teacher_for_distill)
+                loss = loss + args.distill_weight * distill_loss
             scaler.scale(loss).backward()
             if args.grad_clip_norm and args.grad_clip_norm > 0:
                 if args.use_amp:
@@ -339,6 +382,8 @@ def main():
 
             if cur_iter % args.log_iter == 0:
                 writer.add_scalar("train/loss", loss.item(), train_global_step)
+                if distill_enabled:
+                    writer.add_scalar("train/distill_loss", distill_loss.item(), train_global_step)
                 print("TRAIN EPOCH {}, iter {}/{}, loss={}".format(epoch, cur_iter, len(train_dl), round(loss.item(), 4)))
             train_global_step += 1
 

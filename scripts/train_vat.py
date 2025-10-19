@@ -42,6 +42,10 @@ parser.add_argument('--finetune', action='store_true', help='enable finetuning o
 parser.add_argument('--finetune_layers', type=int, default=2, help='number of final transformer blocks to finetune (<=0 means all)')
 parser.add_argument('--backbone_lr', type=float, default=1e-5, help='learning rate for finetuned backbone parameters')
 parser.add_argument('--backbone_weight_decay', type=float, default=0.0, help='weight decay applied to finetuned backbone parameters')
+parser.add_argument('--distill_teacher', type=str, default='gazelle_dinov3_vits16plus',
+    help='teacher model name for knowledge distillation (only used when distill_weight > 0)')
+parser.add_argument('--distill_weight', type=float, default=0.0,
+    help='weight applied to the teacher heatmap loss; set <= 0 to disable distillation')
 args = parser.parse_args()
 
 
@@ -148,7 +152,8 @@ def main():
                 print(f"WARNING: resume checkpoint stored {name}={saved_value}, overriding current value {current_value}.")
             setattr(args, name, saved_value)
 
-        for field in ("finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay"):
+        for field in ("finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay",
+                      "distill_teacher", "distill_weight"):
             restore_arg(field)
 
         timestamp = resume_checkpoint.get("timestamp") or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -179,6 +184,26 @@ def main():
     else:
         print(f"Resuming training from {args.resume} at epoch {start_epoch}")
     model.cuda()
+
+    teacher_model = None
+    distill_loss_fn = nn.MSELoss()
+    distill_enabled = args.distill_weight is not None and args.distill_weight > 0
+    if distill_enabled:
+        if not args.distill_teacher:
+            raise ValueError("distill_weight > 0 but no distill_teacher specified.")
+        if args.distill_teacher == args.model:
+            print("WARNING: distill_teacher matches student model; distillation likely ineffective but continuing.")
+        teacher_model, _ = get_gazelle_model(
+            args.distill_teacher,
+            finetune_backbone=False,
+        )
+        teacher_model.cuda()
+        teacher_model.eval()
+        for param in teacher_model.parameters():
+            param.requires_grad_(False)
+        print(f"Knowledge distillation enabled: teacher={args.distill_teacher}, weight={args.distill_weight}")
+    else:
+        print("Knowledge distillation disabled.")
 
     if args.finetune:
         backbone_trainable_params = configure_backbone_finetune(model.backbone, args.finetune_layers)
@@ -251,7 +276,9 @@ def main():
             imgs, bboxes, gazex, gazey, inout, heights, widths, heatmaps = batch
 
             optimizer.zero_grad()
-            preds = model({"images": imgs.cuda(), "bboxes": [[bbox] for bbox in bboxes]})
+            imgs_cuda = imgs.cuda()
+            bbox_inputs = [[bbox] for bbox in bboxes]
+            preds = model({"images": imgs_cuda, "bboxes": bbox_inputs})
             heatmap_preds = torch.stack(preds['heatmap']).squeeze(dim=1)
             inout_preds = torch.stack(preds['inout']).squeeze(dim=1)
 
@@ -259,6 +286,13 @@ def main():
             heatmap_loss = heatmap_loss_fn(heatmap_preds[inout.bool()], heatmaps[inout.bool()].cuda())
             inout_loss = inout_loss_fn(inout_preds, inout.float().cuda())
             loss = heatmap_loss + args.inout_loss_lambda * inout_loss
+
+            if distill_enabled:
+                with torch.no_grad():
+                    teacher_preds = teacher_model({"images": imgs_cuda, "bboxes": bbox_inputs})
+                    teacher_heatmaps = torch.stack(teacher_preds['heatmap']).squeeze(dim=1)
+                distill_loss = distill_loss_fn(heatmap_preds, teacher_heatmaps)
+                loss = loss + args.distill_weight * distill_loss
             loss.backward()
             optimizer.step()
 
@@ -266,6 +300,8 @@ def main():
                 writer.add_scalar("train/loss", loss.item(), train_global_step)
                 writer.add_scalar("train/heatmap_loss", heatmap_loss.item(), train_global_step)
                 writer.add_scalar("train/inout_loss", inout_loss.item(), train_global_step)
+                if distill_enabled:
+                    writer.add_scalar("train/distill_loss", distill_loss.item(), train_global_step)
                 print("TRAIN EPOCH {}, iter {}/{}, loss={}".format(epoch, cur_iter, len(train_dl), round(loss.item(), 4)))
             train_global_step += 1
 
