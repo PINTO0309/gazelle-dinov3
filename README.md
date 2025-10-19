@@ -128,7 +128,7 @@ uv run python scripts/train_gazefollow.py \
 --max_epochs 100 \
 --batch_size 4 \
 --lr 1e-3 \
---n_workers 50 \
+--n_workers 4 \
 --use_amp \
 --finetune \
 --finetune_layers 2 \
