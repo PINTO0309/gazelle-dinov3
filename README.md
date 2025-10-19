@@ -62,19 +62,22 @@ uv run python scripts/train_gazefollow.py \
 └--------------------┴------------┘
 
 ### backbone finetune - GH200
-python scripts/train_gazefollow.py \
+uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vit_tiny \
---exp_name gazelle_dinov3_s_ft \
+--exp_name gazelle_dinov3_s_ft_bcelogits_prog \
 --log_iter 50 \
 --max_epochs 100 \
---batch_size 128 \
+--batch_size 64 \
 --lr 1e-3 \
 --n_workers 50 \
 --use_amp \
 --finetune \
 --finetune_layers 2 \
---grad_clip_norm 1.0
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--initial_freeze_epochs 10 \
+--unfreeze_interval 3
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
