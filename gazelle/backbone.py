@@ -112,6 +112,15 @@ def configure_backbone_finetune(backbone: Backbone, num_layers: Optional[int] = 
     return trainable_params
 
 
+def get_backbone_num_blocks(backbone: Backbone) -> int:
+    """
+    Return the number of transformer blocks available for progressive unfreezing.
+    When no blocks can be identified, returns 0.
+    """
+    _, blocks = _find_transformer_container(backbone)
+    return len(blocks)
+
+
 # Official DINOv2 backbones from torch hub (https://github.com/facebookresearch/dinov2#pretrained-backbones-via-pytorch-hub)
 class DinoV2Backbone(Backbone):
     def __init__(self, model_name):

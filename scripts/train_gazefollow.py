@@ -7,6 +7,7 @@ import os
 import random
 import sys
 from pathlib import Path
+import time
 import glob
 import torch
 import torch.nn as nn
@@ -18,7 +19,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from gazelle.dataloader import GazeDataset, collate_fn
-from gazelle.backbone import configure_backbone_finetune
+from gazelle.backbone import configure_backbone_finetune, get_backbone_num_blocks
 from gazelle.model import get_gazelle_model
 from gazelle.utils import gazefollow_auc, gazefollow_l2
 
@@ -41,6 +42,9 @@ parser.add_argument('--backbone_lr', type=float, default=1e-5, help='learning ra
 parser.add_argument('--backbone_weight_decay', type=float, default=0.0, help='weight decay applied to finetuned backbone parameters')
 parser.add_argument('--grad_clip_norm', type=float, default=1.0, help='max norm for gradient clipping (<=0 to disable)')
 parser.add_argument('--disable_sigmoid', action='store_true', help='predict raw logits and use BCEWithLogitsLoss')
+parser.add_argument('--initial_freeze_epochs', type=int, default=10, help='number of epochs to keep initial finetune_layers before unfreezing more backbone layers')
+parser.add_argument('--unfreeze_interval', type=int, default=3, help='epoch interval between progressive backbone unfreezing steps after initial_freeze_epochs')
+parser.add_argument('--disable_progressive_unfreeze', action='store_true', help='keep backbone finetune_layers fixed for entire training')
 args = parser.parse_args()
 
 
@@ -153,7 +157,7 @@ def main():
                 print(f"WARNING: resume checkpoint stored {name}={saved_value}, overriding current value {current_value}.")
             setattr(args, name, saved_value)
 
-        for field in ("use_amp", "finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay", "disable_sigmoid"):
+        for field in ("use_amp", "finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay", "disable_sigmoid", "initial_freeze_epochs", "unfreeze_interval", "disable_progressive_unfreeze"):
             restore_arg(field)
 
         timestamp = resume_checkpoint.get("timestamp") or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -187,19 +191,72 @@ def main():
     )
     model.cuda()
 
+    total_backbone_blocks = get_backbone_num_blocks(model.backbone) if args.finetune else 0
+    base_finetune_layers = 0
+    final_unfreeze_epoch = None
+
     if args.finetune:
-        backbone_trainable_params = configure_backbone_finetune(model.backbone, args.finetune_layers)
+        if args.finetune_layers <= 0:
+            base_finetune_layers = total_backbone_blocks
+        else:
+            base_finetune_layers = min(args.finetune_layers, total_backbone_blocks)
+
+    def _target_layers_for_epoch(epoch_index: int) -> int:
+        if not args.finetune or total_backbone_blocks == 0:
+            return 0
+        if base_finetune_layers >= total_backbone_blocks:
+            return total_backbone_blocks
+        if args.disable_progressive_unfreeze:
+            return base_finetune_layers
+        if epoch_index < args.initial_freeze_epochs or args.unfreeze_interval <= 0:
+            return base_finetune_layers
+        steps = (epoch_index - args.initial_freeze_epochs) // max(args.unfreeze_interval, 1) + 1
+        return min(total_backbone_blocks, base_finetune_layers + steps)
+
+    current_finetune_layers = _target_layers_for_epoch(start_epoch)
+
+    if args.finetune:
+        backbone_trainable_params = configure_backbone_finetune(model.backbone, current_finetune_layers)
     else:
         for param in model.backbone.parameters():
             param.requires_grad = False
         backbone_trainable_params = []
+
+    if args.finetune and total_backbone_blocks:
+        extra_needed = max(0, total_backbone_blocks - base_finetune_layers)
+        if args.disable_progressive_unfreeze or extra_needed <= 0:
+            final_unfreeze_epoch = start_epoch if extra_needed <= 0 else None
+        elif args.unfreeze_interval > 0:
+            final_unfreeze_epoch = args.initial_freeze_epochs + (extra_needed - 1) * args.unfreeze_interval
+        else:
+            final_unfreeze_epoch = None
+
+        msg = f"Backbone blocks: {total_backbone_blocks}. Initial trainable blocks: {current_finetune_layers}."
+        if final_unfreeze_epoch is None:
+            if args.disable_progressive_unfreeze and extra_needed > 0:
+                msg += " Progressive unfreeze disabled by flag."
+            else:
+                msg += " Progressive unfreeze disabled (unable to reach all blocks)."
+        else:
+            msg += f" Final unfreeze epoch: {final_unfreeze_epoch}."
+            if final_unfreeze_epoch >= args.max_epochs:
+                msg += " (scheduled beyond max_epochs)"
+        print(msg)
+
+        if (not args.disable_progressive_unfreeze and
+                base_finetune_layers < total_backbone_blocks and
+                args.unfreeze_interval > 0):
+            print(f"Progressive unfreeze scheduled after {args.initial_freeze_epochs} epochs, "
+                  f"adding one block every {args.unfreeze_interval} epochs.")
 
     head_params = [param for name, param in model.named_parameters() if not name.startswith("backbone") and param.requires_grad]
     if not head_params:
         raise RuntimeError("No trainable parameters found for model head.")
 
     param_groups = [{"params": head_params, "lr": args.lr}]
-    if args.finetune and backbone_trainable_params:
+    backbone_group_index = None
+    if args.finetune:
+        backbone_group_index = len(param_groups)
         param_groups.append({
             "params": backbone_trainable_params,
             "lr": args.backbone_lr,
@@ -250,6 +307,16 @@ def main():
         return
 
     for epoch in range(start_epoch, args.max_epochs):
+        if args.finetune and backbone_group_index is not None:
+            target_layers = _target_layers_for_epoch(epoch)
+            if target_layers > current_finetune_layers:
+                backbone_trainable_params = configure_backbone_finetune(model.backbone, target_layers)
+                current_finetune_layers = target_layers
+                optimizer.param_groups[backbone_group_index]["params"] = backbone_trainable_params
+                print(f"Progressive unfreeze: last {current_finetune_layers}/{total_backbone_blocks} backbone blocks now trainable.")
+
+        epoch_start_time = time.time()
+
         # TRAIN EPOCH
         model.train()
         for cur_iter, batch in enumerate(train_dl):
@@ -311,6 +378,11 @@ def main():
         writer.add_scalar("eval/avg_l2", epoch_avg_l2, epoch)
         writer.add_scalar("train/epoch", epoch, epoch)
         print(f"EVAL EPOCH {epoch:03d}: AUC={round(epoch_auc, 4)}, Min L2={round(epoch_min_l2, 4)}, Avg L2={round(epoch_avg_l2, 4)}")
+
+        epoch_elapsed = time.time() - epoch_start_time
+        hours, remainder = divmod(epoch_elapsed, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        print(f"Epoch {epoch:03d} duration (train+eval): {int(hours):02d}:{int(minutes):02d}:{seconds:05.2f}")
 
         if epoch_min_l2 < best_min_l2:
             best_min_l2 = epoch_min_l2
