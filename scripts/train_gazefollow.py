@@ -40,6 +40,7 @@ parser.add_argument('--finetune_layers', type=int, default=2, help='number of fi
 parser.add_argument('--backbone_lr', type=float, default=1e-5, help='learning rate for finetuned backbone parameters')
 parser.add_argument('--backbone_weight_decay', type=float, default=0.0, help='weight decay applied to finetuned backbone parameters')
 parser.add_argument('--grad_clip_norm', type=float, default=1.0, help='max norm for gradient clipping (<=0 to disable)')
+parser.add_argument('--disable_sigmoid', action='store_true', help='predict raw logits and use BCEWithLogitsLoss')
 args = parser.parse_args()
 
 
@@ -152,7 +153,7 @@ def main():
                 print(f"WARNING: resume checkpoint stored {name}={saved_value}, overriding current value {current_value}.")
             setattr(args, name, saved_value)
 
-        for field in ("use_amp", "finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay"):
+        for field in ("use_amp", "finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay", "disable_sigmoid"):
             restore_arg(field)
 
         timestamp = resume_checkpoint.get("timestamp") or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -179,7 +180,11 @@ def main():
     writer = SummaryWriter(**writer_kwargs)
     scaler = GradScaler('cuda', enabled=args.use_amp)
 
-    model, transform = get_gazelle_model(args.model_name, finetune_backbone=args.finetune)
+    model, transform = get_gazelle_model(
+        args.model_name,
+        finetune_backbone=args.finetune,
+        apply_sigmoid=not args.disable_sigmoid,
+    )
     model.cuda()
 
     if args.finetune:
@@ -202,7 +207,7 @@ def main():
         })
     optimizer = torch.optim.Adam(param_groups)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.max_epochs, eta_min=1e-7)
-    loss_fn = nn.BCELoss()
+    loss_fn = nn.BCEWithLogitsLoss() if args.disable_sigmoid else nn.BCELoss()
 
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -286,6 +291,8 @@ def main():
                     preds = model({"images": imgs.cuda(), "bboxes": [[bbox] for bbox in bboxes]})
 
             heatmap_preds = torch.stack(preds['heatmap']).squeeze(dim=1)
+            if args.disable_sigmoid:
+                heatmap_preds = torch.sigmoid(heatmap_preds)
             if args.use_amp:
                 heatmap_preds = heatmap_preds.float()
             for i in range(heatmap_preds.shape[0]):
