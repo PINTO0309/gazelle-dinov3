@@ -212,11 +212,11 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |:-:|:-:|-:|-:|-:|
   |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.8M|0.956|0.045|0.104|
   |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.9M|0.958|0.041|0.099|
-  |S|8.17M||||
-  |M|12.37M||||
-  |L|24.33M||||
-  |X|31.43M||||
-  |XL|88.50M||||
+  |S|8.17 M||||
+  |M|12.37 M||||
+  |L|24.33 M||||
+  |X|31.43 M||||
+  |XL|88.50 M||||
 
 ## Acknowledgments
 - https://github.com/fkryan/gazelle
