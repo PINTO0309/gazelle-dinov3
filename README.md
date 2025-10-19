@@ -109,7 +109,10 @@ uv run python scripts/train_gazefollow.py \
 --use_amp \
 --finetune \
 --finetune_layers 2 \
---grad_clip_norm 1.0
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--initial_freeze_epochs 10 \
+--unfreeze_interval 3
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -164,7 +167,10 @@ uv run python scripts/train_gazefollow.py \
 --use_amp \
 --finetune \
 --finetune_layers 4 \
---grad_clip_norm 1.0
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--initial_freeze_epochs 10 \
+--unfreeze_interval 3
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
