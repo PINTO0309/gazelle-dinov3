@@ -39,6 +39,7 @@ parser.add_argument('--finetune', action='store_true', help='enable finetuning o
 parser.add_argument('--finetune_layers', type=int, default=2, help='number of final transformer blocks to finetune (<=0 means all)')
 parser.add_argument('--backbone_lr', type=float, default=1e-5, help='learning rate for finetuned backbone parameters')
 parser.add_argument('--backbone_weight_decay', type=float, default=0.0, help='weight decay applied to finetuned backbone parameters')
+parser.add_argument('--grad_clip_norm', type=float, default=1.0, help='max norm for gradient clipping (<=0 to disable)')
 args = parser.parse_args()
 
 
@@ -257,6 +258,10 @@ def main():
             loss_targets = heatmaps.cuda()
             loss = loss_fn(loss_inputs, loss_targets)
             scaler.scale(loss).backward()
+            if args.grad_clip_norm and args.grad_clip_norm > 0:
+                if args.use_amp:
+                    scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip_norm)
             scaler.step(optimizer)
             scaler.update()
 
