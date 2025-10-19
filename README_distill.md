@@ -48,10 +48,7 @@ Passing `--distill_weight 0` (or omitting the flag) keeps the previous training 
 
 ## 5. Temperature Schedule
 - Cosine annealing gradually morphs the temperature from `distill_temp_start` to `distill_temp_end` across all training steps:
-  \[
-  T(s) = T_\text{start} + \frac{1 - \cos(\pi \cdot s)}{2} (T_\text{end} - T_\text{start})
-  \]
-  where `s` is the normalised step counter.
+  `T(s) = T_start + 0.5 * (1 - cos(pi * s)) * (T_end - T_start)`, where `s` is the normalised step counter.
 - Higher temperatures soften the teacher distribution, allowing the student to focus on relative preferences instead of exact peaks. Starting low keeps early training close to the supervised baseline, while ending high emphasises the teacher near convergence.
 - The defaults (`1.0 → 4.0`) work well as a first attempt. If the teacher is noisy, keep the end temperature smaller; if the student underfits the teacher, raise it.
 
