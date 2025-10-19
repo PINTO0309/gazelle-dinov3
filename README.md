@@ -28,6 +28,7 @@ Dwonloads Distill-DINOv3 pretrain pt to `ckpts`.
 Dwonloads DINOv3 pretrain pth: From https://github.com/facebookresearch/dinov3 to `ckpts`.
 - `dinov3_vits16_pretrain_lvd1689m-08c60483.pth`
 - `dinov3_vits16plus_pretrain_lvd1689m-4057cbaa.pth`
+- `dinov3_vitb16_pretrain_lvd1689m-73cec8be.pth`
 
 ## Training
 
