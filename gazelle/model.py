@@ -287,7 +287,7 @@ class GazeLLE_ONNX(nn.Module):
         for k in list(keys1 & keys2):
             current_state_dict[k] = ckpt_state_dict[k]
 
-        self.load_state_dict(current_state_dict, strict=False)
+        self.load_state_dict(current_state_dict, strict=True)
 
 # From https://github.com/wzlxjtu/PositionalEncoding2D/blob/master/positionalembedding2d.py
 def positionalencoding2d(d_model, height, width):
