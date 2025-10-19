@@ -408,7 +408,7 @@ def main():
         prune_epoch_checkpoints(exp_dir, keep=10)
 
         if best_epoch == epoch:
-            best_filename = f"best_{epoch:03d}_{best_min_l2:.4f}.pt"
+            best_filename = f"best_{epoch:03d}_{epoch_auc:.4f}_{best_min_l2:.4f}_{epoch_avg_l2:.4f}.pt"
             best_ckpt_path = os.path.join(exp_dir, best_filename)
             save_checkpoint(
                 best_ckpt_path,
