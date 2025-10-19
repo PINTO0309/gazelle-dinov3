@@ -126,9 +126,9 @@ uv run python scripts/train_gazefollow.py \
 --exp_name gazelle_dinov3_x_ft_bcelogits_prog \
 --log_iter 50 \
 --max_epochs 100 \
---batch_size 4 \
+--batch_size 64 \
 --lr 1e-3 \
---n_workers 4 \
+--n_workers 50 \
 --use_amp \
 --finetune \
 --finetune_layers 2 \
