@@ -221,3 +221,13 @@ uv run python scripts/train_gazefollow.py \
     url={https://arxiv.org/abs/2508.10104},
   }
   ```
+- https://github.com/ejcgt/attention-target-detection
+  ```bibtex
+  @inproceedings{Chong_2020_CVPR,
+    title={Detecting Attended Visual Targets in Video},
+    author={Chong, Eunji and Wang, Yongxin and Ruiz, Nataniel and Rehg, James M.},
+    booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month = {June},
+    year = {2020}
+  }
+  ```
