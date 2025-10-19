@@ -3,6 +3,8 @@
 > [!warning]
 > **October 19, 2025 :** I am continuing to experiment to achieve better accuracy, so this repository is still a work in progress.
 
+As I have mastered hell annotation for person detection, I can say with confidence that the minimum required resolution to properly classify the "eyes" and "ears" of the human body, which are important for estimating the direction of the head and gaze, is VGA or higher.
+
 ## Installation
 ```bash
 git clone https://github.com/PINTO0309/gazelle-dinov3.git && cd gazelle-dinov3
