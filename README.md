@@ -43,7 +43,8 @@ uv run python scripts/train_gazefollow.py \
 --batch_size 64 \
 --lr 1e-3 \
 --n_workers 16 \
---use_amp
+--use_amp \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -67,7 +68,8 @@ python scripts/train_gazefollow.py \
 --n_workers 50 \
 --use_amp \
 --finetune \
---finetune_layers 2
+--finetune_layers 2 \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -90,7 +92,8 @@ uv run python scripts/train_gazefollow.py \
 --batch_size 32 \
 --lr 1e-3 \
 --n_workers 16 \
---use_amp
+--use_amp \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -114,7 +117,8 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 16 \
 --use_amp \
 --finetune \
---finetune_layers 2
+--finetune_layers 2 \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -137,7 +141,8 @@ uv run python scripts/train_gazefollow.py \
 --batch_size 8 \
 --lr 1e-3 \
 --n_workers 8 \
---use_amp
+--use_amp \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -161,7 +166,8 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp \
 --finetune \
---finetune_layers 2
+--finetune_layers 2 \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -184,7 +190,8 @@ uv run python scripts/train_gazefollow.py \
 --batch_size 8 \
 --lr 1e-3 \
 --n_workers 8 \
---use_amp
+--use_amp \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -208,7 +215,8 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp \
 --finetune \
---finetune_layers 2
+--finetune_layers 2 \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -231,7 +239,8 @@ uv run python scripts/train_gazefollow.py \
 --batch_size 8 \
 --lr 1e-3 \
 --n_workers 8 \
---use_amp
+--use_amp \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
@@ -255,7 +264,8 @@ uv run python scripts/train_gazefollow.py \
 --n_workers 8 \
 --use_amp \
 --finetune \
---finetune_layers 4
+--finetune_layers 4 \
+--grad_clip_norm 1.0
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
