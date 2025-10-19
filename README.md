@@ -15,6 +15,7 @@ source .venv/bin/activate
 - Downloads
   - GazeFollow dataset: https://github.com/ejcgt/attention-target-detection?tab=readme-ov-file#dataset
   - VideoAttentionTarget dataset: https://github.com/ejcgt/attention-target-detection?tab=readme-ov-file#dataset-1
+  - Download and unzip the above dataset into the `data` folder.
 
 - Preprocessing
   ```bash
