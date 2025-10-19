@@ -71,12 +71,12 @@ uv run python scripts/train_gazefollow.py \
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vit_tinyplus \
---exp_name gazelle_dinov3_m_ft \
+--exp_name gazelle_dinov3_m_ft_bcelogits_prog \
 --log_iter 10 \
 --max_epochs 100 \
---batch_size 16 \
+--batch_size 8 \
 --lr 1e-3 \
---n_workers 16 \
+--n_workers 8 \
 --use_amp \
 --finetune \
 --finetune_layers 2 \
