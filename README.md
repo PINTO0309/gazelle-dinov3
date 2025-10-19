@@ -73,14 +73,17 @@ uv run python scripts/train_gazefollow.py \
 --model_name gazelle_dinov3_vit_tinyplus \
 --exp_name gazelle_dinov3_m_ft \
 --log_iter 10 \
---max_epochs 40 \
+--max_epochs 100 \
 --batch_size 32 \
 --lr 1e-3 \
 --n_workers 16 \
 --use_amp \
 --finetune \
 --finetune_layers 2 \
---grad_clip_norm 1.0
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--initial_freeze_epochs 10 \
+--unfreeze_interval 3
 
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
