@@ -34,7 +34,7 @@ source .venv/bin/activate
 
 ## Download pre-trained backbones
 
-Dwonloads Distill-DINOv3 pretrain pt to `ckpts`.
+Dwonloads Distill-DINOv3 pretrain pt to `ckpts`. The weights were borrowed from [Intellindust-AI-Lab/DEIMv2](https://github.com/Intellindust-AI-Lab/DEIMv2).
 - https://github.com/PINTO0309/DEIMv2/releases/download/weights/vitt_distill.pt
 - https://github.com/PINTO0309/DEIMv2/releases/download/weights/vittplus_distill.pt
 
