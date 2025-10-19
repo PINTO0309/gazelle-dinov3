@@ -3,7 +3,7 @@
 > [!warning]
 > **October 19, 2025 :** I am continuing to experiment to achieve better accuracy, so this repository is still a work in progress.
 
-A model for activating human gaze regions using heat maps.
+A model for activating human gaze regions using heat maps. Built with DINOv3
 
 As I have mastered hell annotation for person detection, I can say with confidence that the minimum required resolution to properly classify the "eyes" and "ears" of the human body, which are important for estimating the direction of the head and gaze, is VGA or higher.
 
