@@ -45,6 +45,8 @@ Dwonloads DINOv3 pretrain pth: From https://github.com/facebookresearch/dinov3 t
 
 ## Training
 
+<details><summary>Training Scripts</summary>
+
 ```
 ############################################# S
 ### backbone finetune - GH200
@@ -191,6 +193,8 @@ uv run python scripts/train_gazefollow.py \
 | Frozen params      |      57.31 |
 └--------------------┴------------┘
 ```
+
+</details>
 
 |Value|Note|
 |:-|:-|
