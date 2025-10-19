@@ -203,6 +203,18 @@ uv run python scripts/train_gazefollow.py \
 |Avg L2|When the entire heat map is considered a probability distribution, this is the Euclidean distance between the prediction center of gravity (expected value) and the correct gaze. It indicates how closely the model's probability mass is to the correct answer; the smaller the value, the better.|
 |Inout AP|Average Precision represents the performance of the in/out head in classifying whether the gaze is within the frame (in) or outside the frame (out).<br>By looking at all combinations of precision and recall while moving the score threshold between 0 and 1, we measure threshold-independent discrimination ability.<br>The closer the score is to 1.0, the higher the score is for frames where the gaze is within the screen, and the lower the score is for frames where the gaze is outside the screen, indicating a stable distinction.|
 
+## Benchmark results for each model
+
+- GazeFollow
+
+  |Variant|Param<br>Backbone+Head|AUC ⬆️|Min L2 ⬇️|Avg L2 ⬇️|
+  |:-:|:-:|-:|-:|-:|
+  |S|8.17M||||
+  |M|12.37M||||
+  |L|24.33M||||
+  |X|31.43M||||
+  |XL|88.50M||||
+
 ## Acknowledgments
 - https://github.com/fkryan/gazelle
   ```bibtex
