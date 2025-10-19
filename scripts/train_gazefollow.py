@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 import time
 import glob
+import math
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
@@ -47,6 +48,8 @@ parser.add_argument('--unfreeze_interval', type=int, default=3, help='epoch inte
 parser.add_argument('--disable_progressive_unfreeze', action='store_true', help='keep backbone finetune_layers fixed for entire training')
 parser.add_argument('--distill_teacher', type=str, default='gazelle_dinov3_vits16plus', help='teacher model name for knowledge distillation (only used when distill_weight > 0)')
 parser.add_argument('--distill_weight', type=float, default=0.0, help='weight applied to the teacher loss; set <= 0 to disable distillation')
+parser.add_argument('--distill_temp_start', type=float, default=1.0, help='initial temperature for distillation soft targets')
+parser.add_argument('--distill_temp_end', type=float, default=4.0, help='final temperature reached via cosine schedule')
 args = parser.parse_args()
 
 
@@ -83,6 +86,14 @@ def _move_optimizer_state_to_device(optimizer, device):
         for key, value in state.items():
             if isinstance(value, torch.Tensor):
                 state[key] = value.to(device)
+
+
+def _cosine_anneal(start: float, end: float, step: int, total_steps: int) -> float:
+    if total_steps <= 0:
+        return end
+    progress = min(max(step / total_steps, 0.0), 1.0)
+    cosine = 0.5 * (1.0 - math.cos(math.pi * progress))
+    return start + (end - start) * cosine
 
 
 def save_checkpoint(path, model, optimizer, scheduler, scaler, epoch, train_global_step,
@@ -161,7 +172,7 @@ def main():
 
         for field in ("use_amp", "finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay",
                       "disable_sigmoid", "initial_freeze_epochs", "unfreeze_interval", "disable_progressive_unfreeze",
-                      "distill_teacher", "distill_weight"):
+                      "distill_teacher", "distill_weight", "distill_temp_start", "distill_temp_end"):
             restore_arg(field)
 
         timestamp = resume_checkpoint.get("timestamp") or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -196,7 +207,7 @@ def main():
     model.cuda()
 
     teacher_model = None
-    distill_loss_fn = nn.MSELoss()
+    distill_loss_fn = nn.KLDivLoss(reduction='batchmean')
     distill_enabled = args.distill_weight is not None and args.distill_weight > 0
     if distill_enabled:
         if not args.distill_teacher:
@@ -212,7 +223,8 @@ def main():
         teacher_model.eval()
         for param in teacher_model.parameters():
             param.requires_grad_(False)
-        print(f"Knowledge distillation enabled: teacher={args.distill_teacher}, weight={args.distill_weight}")
+        print(f"Knowledge distillation enabled: teacher={args.distill_teacher}, weight={args.distill_weight}, "
+              f"temp_start={args.distill_temp_start}, temp_end={args.distill_temp_end} (cosine schedule)")
     else:
         print("Knowledge distillation disabled.")
 
@@ -325,6 +337,7 @@ def main():
     train_dl = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=args.n_workers)
     eval_dataset = GazeDataset('gazefollow', args.data_path, 'test', transform)
     eval_dl = torch.utils.data.DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn, num_workers=args.n_workers)
+    total_train_steps = max(1, len(train_dl) * args.max_epochs) if distill_enabled else 1
 
     if start_epoch >= args.max_epochs:
         print(f"Checkpoint epoch {start_epoch} is >= max_epochs {args.max_epochs}. Nothing to train.")
@@ -358,19 +371,32 @@ def main():
             loss = loss_fn(loss_inputs, loss_targets)
 
             if distill_enabled:
+                distill_loss = None
+                temperature = None
+                current_step = epoch * len(train_dl) + cur_iter
+                temperature = _cosine_anneal(
+                    args.distill_temp_start,
+                    args.distill_temp_end,
+                    current_step,
+                    total_train_steps - 1,
+                )
+                temperature = max(1e-6, temperature)
                 with torch.no_grad():
                     with autocast('cuda', enabled=args.use_amp):
                         teacher_preds = teacher_model({"images": imgs_cuda, "bboxes": bbox_inputs})
                         teacher_heatmaps = torch.stack(teacher_preds['heatmap']).squeeze(dim=1)
-                if args.use_amp:
-                    teacher_heatmaps = teacher_heatmaps.float()
+                teacher_heatmaps = teacher_heatmaps.float()
                 if args.disable_sigmoid:
-                    student_for_distill = torch.sigmoid(loss_inputs)
-                    teacher_for_distill = torch.sigmoid(teacher_heatmaps)
+                    student_logits = loss_inputs
+                    teacher_logits = teacher_heatmaps
                 else:
-                    student_for_distill = loss_inputs
-                    teacher_for_distill = teacher_heatmaps
-                distill_loss = distill_loss_fn(student_for_distill, teacher_for_distill)
+                    student_logits = torch.logit(loss_inputs, eps=1e-6)
+                    teacher_logits = torch.logit(teacher_heatmaps, eps=1e-6)
+                student_logits_flat = (student_logits / temperature).view(student_logits.shape[0], -1)
+                teacher_logits_flat = (teacher_logits / temperature).view(teacher_logits.shape[0], -1)
+                student_log_probs = torch.log_softmax(student_logits_flat, dim=1)
+                teacher_probs = torch.softmax(teacher_logits_flat, dim=1)
+                distill_loss = distill_loss_fn(student_log_probs, teacher_probs) * (temperature ** 2)
                 loss = loss + args.distill_weight * distill_loss
             scaler.scale(loss).backward()
             if args.grad_clip_norm and args.grad_clip_norm > 0:
@@ -383,7 +409,10 @@ def main():
             if cur_iter % args.log_iter == 0:
                 writer.add_scalar("train/loss", loss.item(), train_global_step)
                 if distill_enabled:
-                    writer.add_scalar("train/distill_loss", distill_loss.item(), train_global_step)
+                    if distill_loss is not None:
+                        writer.add_scalar("train/distill_loss", distill_loss.item(), train_global_step)
+                    if temperature is not None:
+                        writer.add_scalar("train/distill_temperature", temperature, train_global_step)
                 print("TRAIN EPOCH {}, iter {}/{}, loss={}".format(epoch, cur_iter, len(train_dl), round(loss.item(), 4)))
             train_global_step += 1
 
