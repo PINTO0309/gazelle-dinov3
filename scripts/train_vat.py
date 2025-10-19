@@ -6,6 +6,7 @@ import numpy as np
 import os
 import random
 import sys
+from typing import Dict
 from pathlib import Path
 import glob
 import math
@@ -20,7 +21,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from gazelle.dataloader import GazeDataset, collate_fn
 from gazelle.backbone import configure_backbone_finetune
-from gazelle.model import get_gazelle_model
+from gazelle.model import get_gazelle_model, GazeLLE
 from gazelle.utils import vat_auc, vat_l2
 
 parser = argparse.ArgumentParser()
@@ -65,7 +66,7 @@ def _collect_rng_state():
     return state
 
 
-def _restore_rng_state(state):
+def _restore_rng_state(state: Dict):
     if not state:
         return
     if "python" in state:
@@ -78,11 +79,12 @@ def _restore_rng_state(state):
         torch.cuda.set_rng_state_all(state["cuda"])
 
 
-def _prepare_model_state_dict(model):
+def _prepare_model_state_dict(model: GazeLLE):
     return {k: v.detach().cpu() for k, v in model.get_gazelle_state_dict().items()}
 
 
-def _move_optimizer_state_to_device(optimizer, device):
+def _move_optimizer_state_to_device(optimizer: torch.optim.Optimizer, device):
+    state: Dict
     for state in optimizer.state.values():
         for key, value in state.items():
             if isinstance(value, torch.Tensor):
@@ -97,7 +99,7 @@ def _cosine_anneal(start: float, end: float, step: int, total_steps: int) -> flo
     return start + (end - start) * cosine
 
 
-def save_checkpoint(path, model, optimizer, epoch, train_global_step, best_inout_ap,
+def save_checkpoint(path, model: GazeLLE, optimizer: torch.optim.Optimizer, epoch, train_global_step, best_inout_ap,
                     timestamp, exp_dir, log_dir, resume_args):
     resume_args = dict(resume_args)
     checkpoint = {

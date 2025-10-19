@@ -7,7 +7,7 @@ import math
 import gazelle.utils as utils
 from gazelle.backbone import DinoV2Backbone, DinoV3Backbone
 import torchvision.transforms.functional as F
-from typing import List, Dict
+from typing import List, Dict, Any
 
 class GazeLLE(nn.Module):
     def __init__(
@@ -113,7 +113,7 @@ class GazeLLE(nn.Module):
             head_maps.append(torch.stack(img_head_maps))
         return head_maps
 
-    def get_gazelle_state_dict(self, include_backbone=False):
+    def get_gazelle_state_dict(self, include_backbone=False) -> Dict[str, Any]:
         if include_backbone:
             return self.state_dict()
         else:
@@ -261,7 +261,7 @@ class GazeLLE_ONNX(nn.Module):
 
         return head_maps
 
-    def get_gazelle_state_dict(self, include_backbone=False):
+    def get_gazelle_state_dict(self, include_backbone=False) -> Dict[str, Any]:
         if include_backbone:
             return self.state_dict()
         else:
