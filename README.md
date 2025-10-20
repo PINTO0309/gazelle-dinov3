@@ -188,7 +188,7 @@ uv run python scripts/train_gazefollow.py \
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vitb16 \
---exp_name gazelle_dinov3_xl_ft_bcelogits_prog \
+--exp_name gazelle_dinov3_xl_ft_bcelogits_disprog \
 --log_iter 50 \
 --max_epochs 20 \
 --batch_size 64 \
