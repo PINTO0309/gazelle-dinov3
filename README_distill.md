@@ -14,20 +14,20 @@ This note summarizes how to train a smaller GazeLLE variant (e.g. `gazelle_dinov
 ## 2. Enabling Distillation
 ```bash
 # Example: distilling the ViT-Tiny student on GazeFollow
-python scripts/train_gazefollow.py \
-  --model_name gazelle_dinov3_vit_tiny \
-  --distill_teacher gazelle_dinov3_vits16plus \
-  --distill_weight 0.3 \
-  --distill_temp_end 4.0
+uv run python scripts/train_gazefollow.py \
+--model_name gazelle_dinov3_vit_tiny \
+--distill_teacher gazelle_dinov3_vits16plus \
+--distill_weight 0.3 \
+--distill_temp_end 4.0
 ```
 
 ```bash
 # Example: distilling the in/out model on VAT
-python scripts/train_vat.py \
-  --model gazelle_dinov3_vit_tinyplus \
-  --distill_teacher gazelle_dinov3_vits16plus \
-  --distill_weight 0.3 \
-  --distill_temp_end 4.0
+uv run python scripts/train_vat.py \
+--model gazelle_dinov3_vit_tinyplus \
+--distill_teacher gazelle_dinov3_vits16plus \
+--distill_weight 0.3 \
+--distill_temp_end 4.0
 ```
 
 Passing `--distill_weight 0` (or omitting the flag) keeps the previous training behaviour.
