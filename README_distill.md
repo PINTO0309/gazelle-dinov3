@@ -82,7 +82,8 @@ If a teacher name is missing or you keep checkpoints elsewhere, pass `--distill_
 
 ## 8. Checkpoint & Resume Behaviour
 - The new CLI flags are stored inside checkpoints. Resuming a run automatically restores the teacher, weight, and temperature parameters and prints a warning if the CLI input differs.
-- Teacher weights are **not** saved in checkpoints; reloading the teacher is deterministic because it is instantiated from the provided model name and its checkpoint. By default the scripts look for matching files in `./ckpts/` (e.g. `gazelle_dinov3_vits16plus.pt`, `gazelle_dinov3_vitb16.pt`). Pass `--distill_teacher_ckpt` to override or when the file lives elsewhere.
+- Training checkpoints now persist **all** learnable weights, including the backbone when it is being fine-tuned. Older checkpoints created before this change may still lack backbone tensors; loading them triggers a warning but remains supported.
+- When you wish to reuse a checkpoint as the distillation teacher, you can pass it via `--distill_teacher_ckpt` and the loader will hydrate both backbone and head. By default the scripts still fall back to the curated files in `./ckpts/` (e.g. `gazelle_dinov3_vits16plus.pt`, `gazelle_dinov3_vitb16.pt`).
 
 ## 9. Practical Tips
 - **GPU memory**: running both student and teacher forward passes roughly doubles memory usage. Use AMP (`--use_amp`) or smaller batch sizes if you encounter OOM errors.
@@ -90,7 +91,7 @@ If a teacher name is missing or you keep checkpoints elsewhere, pass `--distill_
 - **Sanity checks**:
   - Set `--distill_weight` to a very large value (e.g. `10`) for a few iterations; the student heatmaps should quickly mimic the teacher. Revert afterwards.
   - Run one training step with `--distill_weight 0` and confirm the loss matches the historical baseline.
-- **Teacher checkpoints**: verify the teacher’s base performance before distilling. Garbage in leads to garbage out. Ensure the pretrained gaze head checkpoint exists where the script expects it or provide `--distill_teacher_ckpt`.
+- **Teacher checkpoints**: verify the teacher’s base performance before distilling. Garbage in leads to garbage out. Ensure the checkpoint you point to contains backbone weights (all checkpoints saved by the current training scripts do); otherwise the loader will warn and continue with the available parameters.
 
 ## 10. Next Steps
 1. Launch a short training run with `--distill_weight 0.3` to confirm the pipeline works end-to-end.

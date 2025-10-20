@@ -81,8 +81,9 @@ def _restore_rng_state(state: Dict):
         torch.cuda.set_rng_state_all(state["cuda"])
 
 
-def _prepare_model_state_dict(model: GazeLLE):
-    return {k: v.detach().cpu() for k, v in model.get_gazelle_state_dict().items()}
+def _prepare_model_state_dict(model: GazeLLE, include_backbone: bool = True):
+    state = model.get_gazelle_state_dict(include_backbone=include_backbone)
+    return {k: v.detach().cpu() for k, v in state.items()}
 
 
 def _move_optimizer_state_to_device(optimizer: torch.optim.Optimizer, device):
@@ -138,16 +139,20 @@ def _load_teacher_weights(model: GazeLLE, ckpt_path: Path) -> bool:
     if not isinstance(checkpoint, dict):
         print(f"WARNING: Unexpected checkpoint format at {ckpt_path}; expected dict but got {type(checkpoint)}.")
         return False
-    model.load_gazelle_state_dict(checkpoint)
-    print(f"Loaded teacher weights from {ckpt_path}.")
+    has_backbone = any(k.startswith("backbone") for k in checkpoint.keys())
+    model.load_gazelle_state_dict(checkpoint, include_backbone=True)
+    if has_backbone:
+        print(f"Loaded teacher weights (backbone + head) from {ckpt_path}.")
+    else:
+        print(f"WARNING: teacher checkpoint at {ckpt_path} lacks backbone tensors; only head weights were loaded.")
     return True
 
 
 def save_checkpoint(path, model: GazeLLE, optimizer: torch.optim.Optimizer, epoch, train_global_step, best_inout_ap,
-                    timestamp, exp_dir, log_dir, resume_args):
+                    timestamp, exp_dir, log_dir, resume_args, include_backbone: bool = True):
     resume_args = dict(resume_args)
     checkpoint = {
-        "model": _prepare_model_state_dict(model),
+        "model": _prepare_model_state_dict(model, include_backbone=include_backbone),
         "optimizer": optimizer.state_dict(),
         "epoch": epoch,
         "train_global_step": train_global_step,
@@ -162,7 +167,7 @@ def save_checkpoint(path, model: GazeLLE, optimizer: torch.optim.Optimizer, epoc
     torch.save(checkpoint, path)
 
 
-def prune_epoch_checkpoints(exp_dir, keep=10):
+def prune_epoch_checkpoints(exp_dir, keep=1):
     pattern = os.path.join(exp_dir, "epoch_*.pt")
     checkpoints = sorted(glob.glob(pattern))
     if len(checkpoints) <= keep:
@@ -174,6 +179,20 @@ def prune_epoch_checkpoints(exp_dir, keep=10):
             print(f"Removed old checkpoint {ckpt}")
         except OSError as error:
             print(f"WARNING: unable to remove old checkpoint {ckpt}: {error}")
+
+
+def prune_best_checkpoints(exp_dir, keep=10):
+    pattern = os.path.join(exp_dir, "best_*.pt")
+    checkpoints = sorted(glob.glob(pattern))
+    if len(checkpoints) <= keep:
+        return
+    to_delete = checkpoints[:-keep]
+    for ckpt in to_delete:
+        try:
+            os.remove(ckpt)
+            print(f"Removed old best checkpoint {ckpt}")
+        except OSError as error:
+            print(f"WARNING: unable to remove old best checkpoint {ckpt}: {error}")
 
 
 def print_param_summary(rows):
@@ -317,7 +336,7 @@ def main():
     inout_loss_fn = nn.BCELoss()
 
     if resume_checkpoint is not None:
-        model.load_gazelle_state_dict(resume_checkpoint["model"])
+        model.load_gazelle_state_dict(resume_checkpoint["model"], include_backbone=True)
         optimizer.load_state_dict(resume_checkpoint["optimizer"])
         _move_optimizer_state_to_device(optimizer, next(model.parameters()).device)
         _restore_rng_state(resume_checkpoint.get("rng_state"))
@@ -444,7 +463,7 @@ def main():
             vars(args),
         )
         print(f"Saved checkpoint to {ckpt_path}")
-        prune_epoch_checkpoints(exp_dir, keep=10)
+        prune_epoch_checkpoints(exp_dir, keep=1)
 
         if is_best:
             best_filename = f"best_{epoch:03d}_{epoch_auc:.4f}_{epoch_l2:.4f}_{best_inout_ap:.4f}.pt"
@@ -469,14 +488,7 @@ def main():
                     print(f"Removed old checkpoint {legacy_best}")
                 except OSError as error:
                     print(f"WARNING: unable to remove old checkpoint {legacy_best}: {error}")
-            for best_path in glob.glob(os.path.join(exp_dir, "best_*.pt")):
-                if best_path == best_ckpt_path:
-                    continue
-                try:
-                    os.remove(best_path)
-                    print(f"Removed old checkpoint {best_path}")
-                except OSError as error:
-                    print(f"WARNING: unable to remove old checkpoint {best_path}: {error}")
+            prune_best_checkpoints(exp_dir, keep=10)
 
     writer.close()
 
