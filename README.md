@@ -214,7 +214,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |:-:|:-:|-:|-:|-:|
   |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.8 M|0.956|0.045|0.104|
   |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.9 M|0.958|0.041|0.099|
-  |S (No distillation)|8.17 M||||
+  |S (No distillation)|8.17 M|0.9475|0.0599|0.1221|
   |M (No distillation)|12.37 M||||
   |L (No distillation)|24.33 M||||
   |X (No distillation)|31.43 M|0.9554|0.0448|0.1035|
