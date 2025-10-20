@@ -213,6 +213,23 @@ def print_param_summary(rows):
     print(footer)
 
 
+def _log_param_summary(model: GazeLLE, backbone_params):
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    backbone_learnable = sum(p.numel() for p in backbone_params)
+    head_learnable = trainable_params - backbone_learnable
+    frozen_params = total_params - trainable_params
+    rows = [
+        ("Total params", total_params),
+        ("Trainable params", trainable_params),
+        ("Backbone trainable", backbone_learnable),
+        ("Head trainable", head_learnable),
+        ("Frozen params", frozen_params),
+    ]
+    print_param_summary(rows)
+    print(f"Learnable parameters: {trainable_params} (backbone finetune: {backbone_learnable})")
+
+
 def main():
     resume_checkpoint = torch.load(args.resume, map_location='cpu') if args.resume else None
     if resume_checkpoint is not None and "model" not in resume_checkpoint:
@@ -317,21 +334,7 @@ def main():
         raise RuntimeError("No trainable parameter groups configured for optimizer.")
     optimizer = torch.optim.Adam(param_groups)
 
-    total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    backbone_learnable = sum(p.numel() for p in backbone_trainable_params)
-    head_learnable = trainable_params - backbone_learnable
-    frozen_params = total_params - trainable_params
-
-    rows = [
-        ("Total params", total_params),
-        ("Trainable params", trainable_params),
-        ("Backbone trainable", backbone_learnable),
-        ("Head trainable", head_learnable),
-        ("Frozen params", frozen_params),
-    ]
-    print_param_summary(rows)
-    print(f"Learnable parameters: {trainable_params} (backbone finetune: {backbone_learnable})")
+    _log_param_summary(model, backbone_trainable_params)
 
     heatmap_loss_fn = nn.BCELoss()
     inout_loss_fn = nn.BCELoss()
@@ -491,6 +494,8 @@ def main():
                     print(f"WARNING: unable to remove old checkpoint {legacy_best}: {error}")
             prune_best_checkpoints(exp_dir, keep=10)
 
+    print("Final parameter summary after training:")
+    _log_param_summary(model, backbone_trainable_params)
     writer.close()
 
 
