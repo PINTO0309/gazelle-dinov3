@@ -45,16 +45,11 @@ parser.add_argument('--finetune', action='store_true', help='enable finetuning o
 parser.add_argument('--finetune_layers', type=int, default=2, help='number of final transformer blocks to finetune (<=0 means all)')
 parser.add_argument('--backbone_lr', type=float, default=1e-5, help='learning rate for finetuned backbone parameters')
 parser.add_argument('--backbone_weight_decay', type=float, default=0.0, help='weight decay applied to finetuned backbone parameters')
-parser.add_argument('--distill_teacher', type=str, default='gazelle_dinov3_vits16plus',
-    help='teacher model name for knowledge distillation (only used when distill_weight > 0)')
-parser.add_argument('--distill_weight', type=float, default=0.0,
-    help='weight applied to the teacher heatmap loss; set <= 0 to disable distillation')
-parser.add_argument('--distill_temp_start', type=float, default=1.0,
-    help='initial temperature for distillation soft targets')
-parser.add_argument('--distill_temp_end', type=float, default=4.0,
-    help='final temperature reached via cosine schedule')
-parser.add_argument('--distill_teacher_ckpt', type=str, default=None,
-    help='path to checkpoint used to initialize the teacher model (defaults to matching ckpt in ./ckpts)')
+parser.add_argument('--distill_teacher', type=str, default='gazelle_dinov3_vits16plus', help='teacher model name for knowledge distillation (only used when distill_weight > 0)')
+parser.add_argument('--distill_weight', type=float, default=0.0, help='weight applied to the teacher heatmap loss; set <= 0 to disable distillation')
+parser.add_argument('--distill_temp_start', type=float, default=1.0, help='initial temperature for distillation soft targets')
+parser.add_argument('--distill_temp_end', type=float, default=4.0, help='final temperature reached via cosine schedule')
+parser.add_argument('--distill_teacher_ckpt', type=str, default=None, help='path to checkpoint used to initialize the teacher model (defaults to matching ckpt in ./ckpts)')
 args = parser.parse_args()
 
 
