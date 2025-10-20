@@ -47,7 +47,12 @@ def main():
     print("Running on {}".format(device))
 
     model, transform = get_gazelle_model(args.model_name)
-    model.load_gazelle_state_dict(torch.load(args.ckpt_path, weights_only=True))
+    ckpt_raw = torch.load(args.ckpt_path, weights_only=False)
+    ckpt = ckpt_raw["model"] if isinstance(ckpt_raw, dict) and "model" in ckpt_raw else ckpt_raw
+    has_backbone = any(k.startswith("backbone") for k in ckpt.keys())
+    model.load_gazelle_state_dict(ckpt, include_backbone=True)
+    if not has_backbone:
+        print(f"WARNING: checkpoint {args.ckpt_path} lacks backbone weights; using backbone defaults.")
     model.to(device)
     model.eval()
 

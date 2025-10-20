@@ -44,8 +44,12 @@ models = {
 
 for m, params in models.items():
     model, transform = get_gazelle_model(model_name=m, onnx_export=True)
-    ckpt = torch.load(params[0], weights_only=False)["model"]
-    model.load_gazelle_state_dict(ckpt)
+    ckpt_raw = torch.load(params[0], weights_only=False)
+    ckpt = ckpt_raw["model"] if isinstance(ckpt_raw, dict) and "model" in ckpt_raw else ckpt_raw
+    has_backbone = any(k.startswith("backbone") for k in ckpt.keys())
+    model.load_gazelle_state_dict(ckpt, include_backbone=True)
+    if not has_backbone:
+        print(f"WARNING: Checkpoint {params[0]} does not contain backbone weights; exporting with backbone defaults.")
     model.eval()
     model.cpu()
 

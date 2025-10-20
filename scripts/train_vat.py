@@ -259,7 +259,7 @@ def main():
     model, transform = get_gazelle_model(args.model, finetune_backbone=args.finetune)
     if resume_checkpoint is None:
         print("Initializing from {}".format(args.init_ckpt))
-        model.load_gazelle_state_dict(torch.load(args.init_ckpt, weights_only=True)) # initializing from ckpt without inout head
+        model.load_gazelle_state_dict(torch.load(args.init_ckpt, weights_only=True), include_backbone=True) # initializing from ckpt without inout head
     else:
         print(f"Resuming training from {args.resume} at epoch {start_epoch}")
     model.cuda()

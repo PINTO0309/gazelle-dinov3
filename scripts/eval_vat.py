@@ -41,7 +41,7 @@ class VideoAttentionTarget(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.frames)
-    
+
 def collate(batch):
     images, bboxes, gazex, gazey, inout = zip(*batch)
     return torch.stack(images), list(bboxes), list(gazex), list(gazey), list(inout)
@@ -53,7 +53,12 @@ def main():
     print("Running on {}".format(device))
 
     model, transform = get_gazelle_model(args.model_name)
-    model.load_gazelle_state_dict(torch.load(args.ckpt_path, weights_only=True))
+    ckpt_raw = torch.load(args.ckpt_path, weights_only=False)
+    ckpt = ckpt_raw["model"] if isinstance(ckpt_raw, dict) and "model" in ckpt_raw else ckpt_raw
+    has_backbone = any(k.startswith("backbone") for k in ckpt.keys())
+    model.load_gazelle_state_dict(ckpt, include_backbone=True)
+    if not has_backbone:
+        print(f"WARNING: checkpoint {args.ckpt_path} lacks backbone weights; using backbone defaults.")
     model.to(device)
     model.eval()
 
@@ -67,7 +72,7 @@ def main():
 
     for _, (images, bboxes, gazex, gazey, inout) in tqdm(enumerate(dataloader), desc="Evaluating", total=len(dataloader)):
         preds = model.forward({"images": images.to(device), "bboxes": bboxes})
-        
+
         # eval each instance (head)
         for i in range(images.shape[0]): # per image
             for j in range(len(bboxes[i])): # per head
@@ -79,11 +84,11 @@ def main():
                 inout_preds.append(preds['inout'][i][j].item())
                 inout_gts.append(inout[i][j])
 
-    
+
     print("AUC: {}".format(np.array(aucs).mean()))
     print("Avg L2: {}".format(np.array(l2s).mean()))
     print("Inout AP: {}".format(average_precision_score(inout_gts, inout_preds)))
 
-        
+
 if __name__ == "__main__":
     main()
