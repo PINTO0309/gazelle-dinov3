@@ -6,7 +6,7 @@ import numpy as np
 import os
 import random
 import sys
-from typing import Dict
+from typing import Dict, Optional
 from pathlib import Path
 import glob
 import math
@@ -52,6 +52,8 @@ parser.add_argument('--distill_temp_start', type=float, default=1.0,
     help='initial temperature for distillation soft targets')
 parser.add_argument('--distill_temp_end', type=float, default=4.0,
     help='final temperature reached via cosine schedule')
+parser.add_argument('--distill_teacher_ckpt', type=str, default=None,
+    help='path to checkpoint used to initialize the teacher model (defaults to matching ckpt in ./ckpts)')
 args = parser.parse_args()
 
 
@@ -79,8 +81,9 @@ def _restore_rng_state(state: Dict):
         torch.cuda.set_rng_state_all(state["cuda"])
 
 
-def _prepare_model_state_dict(model: GazeLLE):
-    return {k: v.detach().cpu() for k, v in model.get_gazelle_state_dict().items()}
+def _prepare_model_state_dict(model: GazeLLE, include_backbone: bool = True):
+    state = model.get_gazelle_state_dict(include_backbone=include_backbone)
+    return {k: v.detach().cpu() for k, v in state.items()}
 
 
 def _move_optimizer_state_to_device(optimizer: torch.optim.Optimizer, device):
@@ -99,11 +102,57 @@ def _cosine_anneal(start: float, end: float, step: int, total_steps: int) -> flo
     return start + (end - start) * cosine
 
 
+DEFAULT_TEACHER_CKPTS = {
+    # DINOv3
+    "gazelle_dinov3_vit_tiny": "./ckpts/vitt_distill.pt",
+    "gazelle_dinov3_vit_tinyplus": "./ckpts/vittplus_distill.pt",
+    "gazelle_dinov3_vits16": "./ckpts/gazelle_dinov3_vits16.pt",
+    "gazelle_dinov3_vits16plus": "./ckpts/gazelle_dinov3_vits16plus.pt",
+    "gazelle_dinov3_vitb16": "./ckpts/gazelle_dinov3_vitb16.pt",
+    # DINOv2
+    "gazelle_dinov2_vitb14": "./ckpts/gazelle_dinov2_vitb14.pt",
+    "gazelle_dinov2_vitl14": "./ckpts/gazelle_dinov2_vitl14.pt",
+    "gazelle_dinov2_vitb14_inout": "./ckpts/gazelle_dinov2_vitb14_inout.pt",
+    "gazelle_dinov2_vitl14_inout": "./ckpts/gazelle_dinov2_vitl14_inout.pt",
+}
+
+
+def _resolve_teacher_ckpt(model_name: str, override: Optional[str]) -> Optional[Path]:
+    if override:
+        return Path(override).expanduser()
+    default = DEFAULT_TEACHER_CKPTS.get(model_name)
+    if default is None:
+        return None
+    return (REPO_ROOT / Path(default)).expanduser()
+
+
+def _load_teacher_weights(model: GazeLLE, ckpt_path: Path) -> bool:
+    if not ckpt_path.exists():
+        print(f"WARNING: teacher checkpoint not found at {ckpt_path}. Proceeding without pretrained head.")
+        return False
+    try:
+        checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    except TypeError:
+        checkpoint = torch.load(ckpt_path, map_location="cpu")
+    if isinstance(checkpoint, dict) and "model" in checkpoint:
+        checkpoint = checkpoint["model"]
+    if not isinstance(checkpoint, dict):
+        print(f"WARNING: Unexpected checkpoint format at {ckpt_path}; expected dict but got {type(checkpoint)}.")
+        return False
+    has_backbone = any(k.startswith("backbone") for k in checkpoint.keys())
+    model.load_gazelle_state_dict(checkpoint, include_backbone=True)
+    if has_backbone:
+        print(f"Loaded teacher weights (backbone + head) from {ckpt_path}.")
+    else:
+        print(f"WARNING: teacher checkpoint at {ckpt_path} lacks backbone tensors; only head weights were loaded.")
+    return True
+
+
 def save_checkpoint(path, model: GazeLLE, optimizer: torch.optim.Optimizer, epoch, train_global_step, best_inout_ap,
-                    timestamp, exp_dir, log_dir, resume_args):
+                    timestamp, exp_dir, log_dir, resume_args, include_backbone: bool = True):
     resume_args = dict(resume_args)
     checkpoint = {
-        "model": _prepare_model_state_dict(model),
+        "model": _prepare_model_state_dict(model, include_backbone=include_backbone),
         "optimizer": optimizer.state_dict(),
         "epoch": epoch,
         "train_global_step": train_global_step,
@@ -118,7 +167,7 @@ def save_checkpoint(path, model: GazeLLE, optimizer: torch.optim.Optimizer, epoc
     torch.save(checkpoint, path)
 
 
-def prune_epoch_checkpoints(exp_dir, keep=10):
+def prune_epoch_checkpoints(exp_dir, keep=1):
     pattern = os.path.join(exp_dir, "epoch_*.pt")
     checkpoints = sorted(glob.glob(pattern))
     if len(checkpoints) <= keep:
@@ -130,6 +179,20 @@ def prune_epoch_checkpoints(exp_dir, keep=10):
             print(f"Removed old checkpoint {ckpt}")
         except OSError as error:
             print(f"WARNING: unable to remove old checkpoint {ckpt}: {error}")
+
+
+def prune_best_checkpoints(exp_dir, keep=10):
+    pattern = os.path.join(exp_dir, "best_*.pt")
+    checkpoints = sorted(glob.glob(pattern))
+    if len(checkpoints) <= keep:
+        return
+    to_delete = checkpoints[:-keep]
+    for ckpt in to_delete:
+        try:
+            os.remove(ckpt)
+            print(f"Removed old best checkpoint {ckpt}")
+        except OSError as error:
+            print(f"WARNING: unable to remove old best checkpoint {ckpt}: {error}")
 
 
 def print_param_summary(rows):
@@ -168,7 +231,8 @@ def main():
             setattr(args, name, saved_value)
 
         for field in ("finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay",
-                      "distill_teacher", "distill_weight", "distill_temp_start", "distill_temp_end"):
+                      "distill_teacher", "distill_weight", "distill_temp_start", "distill_temp_end",
+                      "distill_teacher_ckpt"):
             restore_arg(field)
 
         timestamp = resume_checkpoint.get("timestamp") or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -212,6 +276,12 @@ def main():
             args.distill_teacher,
             finetune_backbone=False,
         )
+        teacher_ckpt_path = _resolve_teacher_ckpt(args.distill_teacher, args.distill_teacher_ckpt)
+        if teacher_ckpt_path is None:
+            print(f"WARNING: No checkpoint mapping found for teacher '{args.distill_teacher}'. "
+                  "Provide --distill_teacher_ckpt to load pretrained head weights.")
+        else:
+            _load_teacher_weights(teacher_model, teacher_ckpt_path)
         teacher_model.cuda()
         teacher_model.eval()
         for param in teacher_model.parameters():
@@ -266,7 +336,7 @@ def main():
     inout_loss_fn = nn.BCELoss()
 
     if resume_checkpoint is not None:
-        model.load_gazelle_state_dict(resume_checkpoint["model"])
+        model.load_gazelle_state_dict(resume_checkpoint["model"], include_backbone=True)
         optimizer.load_state_dict(resume_checkpoint["optimizer"])
         _move_optimizer_state_to_device(optimizer, next(model.parameters()).device)
         _restore_rng_state(resume_checkpoint.get("rng_state"))
@@ -393,7 +463,7 @@ def main():
             vars(args),
         )
         print(f"Saved checkpoint to {ckpt_path}")
-        prune_epoch_checkpoints(exp_dir, keep=10)
+        prune_epoch_checkpoints(exp_dir, keep=1)
 
         if is_best:
             best_filename = f"best_{epoch:03d}_{epoch_auc:.4f}_{epoch_l2:.4f}_{best_inout_ap:.4f}.pt"
@@ -418,14 +488,7 @@ def main():
                     print(f"Removed old checkpoint {legacy_best}")
                 except OSError as error:
                     print(f"WARNING: unable to remove old checkpoint {legacy_best}: {error}")
-            for best_path in glob.glob(os.path.join(exp_dir, "best_*.pt")):
-                if best_path == best_ckpt_path:
-                    continue
-                try:
-                    os.remove(best_path)
-                    print(f"Removed old checkpoint {best_path}")
-                except OSError as error:
-                    print(f"WARNING: unable to remove old checkpoint {best_path}: {error}")
+            prune_best_checkpoints(exp_dir, keep=10)
 
     writer.close()
 
