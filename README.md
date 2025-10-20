@@ -218,7 +218,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |M (No distillation)|12.37 M||||
   |L (No distillation)|24.33 M||||
   |X (No distillation)|31.43 M|0.9554|0.0448|0.1035|
-  |XL (No distillation)|88.50 M|0.9581|0.0410|0.0980|
+  |XL (No distillation)|88.50 M|0.9593|0.0405|0.0973|
 
 ## Acknowledgments
 - https://github.com/fkryan/gazelle
