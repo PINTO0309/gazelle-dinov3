@@ -10,6 +10,7 @@ from typing import Dict, Optional
 from pathlib import Path
 import glob
 import math
+from tqdm import tqdm
 from sklearn.metrics import average_precision_score
 import torch
 import torch.nn as nn
@@ -419,7 +420,7 @@ def main():
         aucs = []
         all_inout_preds = []
         all_inout_gts = []
-        for cur_iter, batch in enumerate(eval_dl):
+        for cur_iter, batch in enumerate(tqdm(eval_dl, desc="Validation", leave=False, dynamic_ncols=True)):
             imgs, bboxes, gazex, gazey, inout, heights, widths = batch
 
             with torch.no_grad():

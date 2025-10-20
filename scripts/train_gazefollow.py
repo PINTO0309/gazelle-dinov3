@@ -11,6 +11,7 @@ from pathlib import Path
 import time
 import glob
 import math
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
@@ -494,7 +495,7 @@ def main():
         avg_l2s = []
         min_l2s = []
         aucs = []
-        for cur_iter, batch in enumerate(eval_dl):
+        for cur_iter, batch in enumerate(tqdm(eval_dl, desc="Validation", leave=False, dynamic_ncols=True)):
             imgs, bboxes, gazex, gazey, inout, heights, widths = batch
 
             with torch.no_grad():
