@@ -69,6 +69,27 @@ uv run python scripts/train_gazefollow.py \
 --initial_freeze_epochs 10 \
 --unfreeze_interval 3
 
+### distillation - GH200
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vit_tiny \
+--exp_name gazelle_dinov3_s_ft_bcelogits_prog_distill \
+--log_iter 50 \
+--max_epochs 45 \
+--batch_size 64 \
+--lr 1e-3 \
+--n_workers 50 \
+--use_amp \
+--finetune \
+--finetune_layers 2 \
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--initial_freeze_epochs 10 \
+--unfreeze_interval 3 \
+--distill_teacher gazelle_dinov3_vitb16 \
+--distill_weight 0.3 \
+--distill_temp_end 4.0
+
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
 ┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
@@ -214,7 +235,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |:-:|:-:|-:|-:|-:|
   |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.8 M|0.956|0.045|0.104|
   |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.9 M|0.958|0.041|0.099|
-  |S (No distillation)|8.17 M|0.9475|0.0599|0.1221|
+  |S (No distillation)|8.17 M|0.9477|0.0598|0.1221|
   |M (No distillation)|12.37 M||||
   |L (No distillation)|24.33 M||||
   |X (No distillation)|31.43 M|0.9554|0.0448|0.1035|
