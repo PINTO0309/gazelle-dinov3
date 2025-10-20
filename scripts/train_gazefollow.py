@@ -578,14 +578,6 @@ def main():
                 except OSError as error:
                     print(f"WARNING: unable to remove old checkpoint {legacy_best}: {error}")
             prune_best_checkpoints(exp_dir, keep=10)
-            for best_path in glob.glob(os.path.join(exp_dir, "best_*.pt")):
-                if best_path == best_ckpt_path:
-                    continue
-                try:
-                    os.remove(best_path)
-                    print(f"Removed old checkpoint {best_path}")
-                except OSError as error:
-                    print(f"WARNING: unable to remove old checkpoint {best_path}: {error}")
 
     print(f"Completed training. Best Min L2 of {round(best_min_l2, 4)} obtained at epoch {best_epoch:03d}")
     writer.close()
