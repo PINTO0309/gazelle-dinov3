@@ -6,7 +6,7 @@ import numpy as np
 import os
 import random
 import sys
-from typing import Dict
+from typing import Dict, Optional
 from pathlib import Path
 import time
 import glob
@@ -51,6 +51,7 @@ parser.add_argument('--distill_teacher', type=str, default='gazelle_dinov3_vits1
 parser.add_argument('--distill_weight', type=float, default=0.0, help='weight applied to the teacher loss; set <= 0 to disable distillation')
 parser.add_argument('--distill_temp_start', type=float, default=1.0, help='initial temperature for distillation soft targets')
 parser.add_argument('--distill_temp_end', type=float, default=4.0, help='final temperature reached via cosine schedule')
+parser.add_argument('--distill_teacher_ckpt', type=str, default=None, help='path to checkpoint used to initialize the teacher model (defaults to matching ckpt in ./ckpts)')
 args = parser.parse_args()
 
 
@@ -96,6 +97,48 @@ def _cosine_anneal(start: float, end: float, step: int, total_steps: int) -> flo
     progress = min(max(step / total_steps, 0.0), 1.0)
     cosine = 0.5 * (1.0 - math.cos(math.pi * progress))
     return start + (end - start) * cosine
+
+
+DEFAULT_TEACHER_CKPTS = {
+    # DINOv3
+    "gazelle_dinov3_vit_tiny": "./ckpts/gazelle_dinov3_vit_tiny.pt",
+    "gazelle_dinov3_vit_tinyplus": "./ckpts/gazelle_dinov3_vit_tinyplus.pt",
+    "gazelle_dinov3_vits16": "./ckpts/gazelle_dinov3_vits16.pt",
+    "gazelle_dinov3_vits16plus": "./ckpts/gazelle_dinov3_vits16plus.pt",
+    "gazelle_dinov3_vitb16": "./ckpts/gazelle_dinov3_vitb16.pt",
+    # DINOv2
+    "gazelle_dinov2_vitb14": "./ckpts/gazelle_dinov2_vitb14.pt",
+    "gazelle_dinov2_vitl14": "./ckpts/gazelle_dinov2_vitl14.pt",
+    "gazelle_dinov2_vitb14_inout": "./ckpts/gazelle_dinov2_vitb14_inout.pt",
+    "gazelle_dinov2_vitl14_inout": "./ckpts/gazelle_dinov2_vitl14_inout.pt",
+}
+
+
+def _resolve_teacher_ckpt(model_name: str, override: Optional[str]) -> Optional[Path]:
+    if override:
+        return Path(override).expanduser()
+    default = DEFAULT_TEACHER_CKPTS.get(model_name)
+    if default is None:
+        return None
+    return (REPO_ROOT / Path(default)).expanduser()
+
+
+def _load_teacher_weights(model: GazeLLE, ckpt_path: Path) -> bool:
+    if not ckpt_path.exists():
+        print(f"WARNING: teacher checkpoint not found at {ckpt_path}. Proceeding without pretrained head.")
+        return False
+    try:
+        checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    except TypeError:
+        checkpoint = torch.load(ckpt_path, map_location="cpu")
+    if isinstance(checkpoint, dict) and "model" in checkpoint:
+        checkpoint = checkpoint["model"]
+    if not isinstance(checkpoint, dict):
+        print(f"WARNING: Unexpected checkpoint format at {ckpt_path}; expected dict but got {type(checkpoint)}.")
+        return False
+    model.load_gazelle_state_dict(checkpoint)
+    print(f"Loaded teacher weights from {ckpt_path}.")
+    return True
 
 
 def save_checkpoint(path, model, optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler.LRScheduler, scaler: torch.amp.GradScaler, epoch, train_global_step,
@@ -221,6 +264,12 @@ def main():
             finetune_backbone=False,
             apply_sigmoid=not args.disable_sigmoid,
         )
+        teacher_ckpt_path = _resolve_teacher_ckpt(args.distill_teacher, args.distill_teacher_ckpt)
+        if teacher_ckpt_path is None:
+            print(f"WARNING: No checkpoint mapping found for teacher '{args.distill_teacher}'. "
+                  "Provide --distill_teacher_ckpt to load pretrained head weights.")
+        else:
+            _load_teacher_weights(teacher_model, teacher_ckpt_path)
         teacher_model.cuda()
         teacher_model.eval()
         for param in teacher_model.parameters():

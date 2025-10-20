@@ -9,6 +9,7 @@ This note summarizes how to train a smaller GazeLLE variant (e.g. `gazelle_dinov
   - `--distill_weight`: scalar weight applied to the auxiliary KL loss.
   - `--distill_temp_start`: temperature used at the beginning of training (default `1.0`).
   - `--distill_temp_end`: temperature reached at the last training step via cosine annealing (default `4.0`).
+  - `--distill_teacher_ckpt`: optional override pointing to the teacher’s checkpoint (defaults to a lookup in `./ckpts/`).
 - When enabled, the teacher model is loaded in evaluation mode, frozen, and kept in `torch.no_grad()` contexts during training.
 
 ## 2. Enabling Distillation
@@ -36,6 +37,20 @@ Passing `--distill_weight 0` (or omitting the flag) keeps the previous training 
 - Start with `gazelle_dinov3_vits16plus`: it offers a strong signal while remaining light enough to co-train with the student.
 - Once the pipeline is stable, consider swapping to `gazelle_dinov3_vitb16` for potential accuracy gains. Expect to revisit loss weights because the representational gap grows with the larger teacher.
 - If the student and teacher share the same architecture, expect marginal benefit; the scripts still allow this configuration but emit a warning.
+
+The training scripts try to locate pretrained heads for the most common teachers automatically:
+
+- `gazelle_dinov3_vit_tiny` → `./ckpts/gazelle_dinov3_vit_tiny.pt`
+- `gazelle_dinov3_vit_tinyplus` → `./ckpts/gazelle_dinov3_vit_tinyplus.pt`
+- `gazelle_dinov3_vits16` → `./ckpts/gazelle_dinov3_vits16.pt`
+- `gazelle_dinov3_vits16plus` → `./ckpts/gazelle_dinov3_vits16plus.pt`
+- `gazelle_dinov3_vitb16` → `./ckpts/gazelle_dinov3_vitb16.pt`
+- `gazelle_dinov2_vitb14` → `./ckpts/gazelle_dinov2_vitb14.pt`
+- `gazelle_dinov2_vitl14` → `./ckpts/gazelle_dinov2_vitl14.pt`
+- `gazelle_dinov2_vitb14_inout` → `./ckpts/gazelle_dinov2_vitb14_inout.pt`
+- `gazelle_dinov2_vitl14_inout` → `./ckpts/gazelle_dinov2_vitl14_inout.pt`
+
+If a teacher name is missing or you keep checkpoints elsewhere, pass `--distill_teacher_ckpt /path/to/file.pt`.
 
 ## 4. Loss Formulation
 - Student heatmaps still optimise BCE/BCEWithLogits exactly as before.
@@ -67,7 +82,7 @@ Passing `--distill_weight 0` (or omitting the flag) keeps the previous training 
 
 ## 8. Checkpoint & Resume Behaviour
 - The new CLI flags are stored inside checkpoints. Resuming a run automatically restores the teacher, weight, and temperature parameters and prints a warning if the CLI input differs.
-- Teacher weights are **not** saved in checkpoints; reloading the teacher is deterministic because it is instantiated from the provided model name and default checkpoints (`./ckpts/...`).
+- Teacher weights are **not** saved in checkpoints; reloading the teacher is deterministic because it is instantiated from the provided model name and its checkpoint. By default the scripts look for matching files in `./ckpts/` (e.g. `gazelle_dinov3_vits16plus.pt`, `gazelle_dinov3_vitb16.pt`). Pass `--distill_teacher_ckpt` to override or when the file lives elsewhere.
 
 ## 9. Practical Tips
 - **GPU memory**: running both student and teacher forward passes roughly doubles memory usage. Use AMP (`--use_amp`) or smaller batch sizes if you encounter OOM errors.
@@ -75,7 +90,7 @@ Passing `--distill_weight 0` (or omitting the flag) keeps the previous training 
 - **Sanity checks**:
   - Set `--distill_weight` to a very large value (e.g. `10`) for a few iterations; the student heatmaps should quickly mimic the teacher. Revert afterwards.
   - Run one training step with `--distill_weight 0` and confirm the loss matches the historical baseline.
-- **Teacher checkpoints**: verify the teacher’s base performance before distilling. Garbage in leads to garbage out.
+- **Teacher checkpoints**: verify the teacher’s base performance before distilling. Garbage in leads to garbage out. Ensure the pretrained gaze head checkpoint exists where the script expects it or provide `--distill_teacher_ckpt`.
 
 ## 10. Next Steps
 1. Launch a short training run with `--distill_weight 0.3` to confirm the pipeline works end-to-end.
