@@ -175,7 +175,7 @@ uv run python scripts/train_gazefollow.py \
 --model_name gazelle_dinov3_vits16 \
 --exp_name gazelle_dinov3_l_ft_bcelogits_prog_distill \
 --log_iter 50 \
---max_epochs 35 \
+--max_epochs 30 \
 --batch_size 64 \
 --lr 1e-3 \
 --n_workers 50 \
@@ -320,7 +320,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |S|8.17 M|0.9477|0.0598|0.1221||
   |S-distillation|8.17 M|0.9545|0.0484|0.1118|Download|
   |M-distillation|12.37 M||||Download|
-  |L-distillation|24.33 M||||Download|
+  |L-distillation|24.33 M|0.9593|0.0418|0.0992|Download|
   |X|31.43 M|0.9554|0.0448|0.1035||
   |X-distillation|**31.43 M**|**0.9604**|**0.0395**|**0.0966**|Download|
   |XL (Teacher)|88.50 M|0.9593|0.0405|0.0973|Download|
