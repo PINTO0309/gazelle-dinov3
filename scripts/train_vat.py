@@ -22,7 +22,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from gazelle.dataloader import GazeDataset, collate_fn
-from gazelle.backbone import configure_backbone_finetune
+from gazelle.backbone import configure_backbone_finetune, get_backbone_num_blocks
 from gazelle.model import get_gazelle_model, GazeLLE
 from gazelle.utils import vat_auc, vat_l2
 
@@ -67,6 +67,9 @@ parser.add_argument('--backbone_lr', type=float, default=1e-5, help='learning ra
 parser.add_argument('--backbone_weight_decay', type=float, default=0.0, help='weight decay applied to finetuned backbone parameters')
 parser.add_argument('--grad_clip_norm', type=float, default=1.0, help='max norm for gradient clipping (<=0 to disable)')
 parser.add_argument('--disable_sigmoid', action='store_true', help='predict raw logits and use BCEWithLogitsLoss')
+parser.add_argument('--initial_freeze_epochs', type=int, default=10, help='number of epochs to keep initial finetune_layers before unfreezing more backbone layers')
+parser.add_argument('--unfreeze_interval', type=int, default=3, help='epoch interval between progressive backbone unfreezing steps after initial_freeze_epochs')
+parser.add_argument('--disable_progressive_unfreeze', action='store_true', help='keep backbone finetune_layers fixed for entire training')
 parser.add_argument('--distill_teacher', type=str, default='gazelle_dinov3_vitb16_inout', help='teacher model name for knowledge distillation (only used when distill_weight > 0)')
 parser.add_argument('--distill_weight', type=float, default=0.0, help='weight applied to the teacher heatmap loss; set <= 0 to disable distillation')
 parser.add_argument('--distill_temp_start', type=float, default=1.0, help='initial temperature for distillation soft targets')
@@ -269,7 +272,8 @@ def main():
 
         for field in ("finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay",
                       "distill_teacher", "distill_weight", "distill_temp_start", "distill_temp_end",
-                      "distill_teacher_ckpt", "use_amp", "disable_sigmoid", "grad_clip_norm"):
+                      "distill_teacher_ckpt", "use_amp", "disable_sigmoid", "grad_clip_norm",
+                      "initial_freeze_epochs", "unfreeze_interval", "disable_progressive_unfreeze"):
             restore_arg(field)
 
         timestamp = resume_checkpoint.get("timestamp") or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -334,12 +338,63 @@ def main():
     else:
         print("Knowledge distillation disabled.")
 
+    total_backbone_blocks = get_backbone_num_blocks(model.backbone) if args.finetune else 0
+    base_finetune_layers = 0
+    final_unfreeze_epoch = None
+
     if args.finetune:
-        backbone_trainable_params = configure_backbone_finetune(model.backbone, args.finetune_layers)
+        if args.finetune_layers <= 0:
+            base_finetune_layers = total_backbone_blocks
+        else:
+            base_finetune_layers = min(args.finetune_layers, total_backbone_blocks)
+
+    def _target_layers_for_epoch(epoch_index: int) -> int:
+        if not args.finetune or total_backbone_blocks == 0:
+            return 0
+        if base_finetune_layers >= total_backbone_blocks:
+            return total_backbone_blocks
+        if args.disable_progressive_unfreeze:
+            return base_finetune_layers
+        if epoch_index < args.initial_freeze_epochs or args.unfreeze_interval <= 0:
+            return base_finetune_layers
+        steps = (epoch_index - args.initial_freeze_epochs) // max(args.unfreeze_interval, 1) + 1
+        return min(total_backbone_blocks, base_finetune_layers + steps)
+
+    current_finetune_layers = _target_layers_for_epoch(start_epoch)
+
+    if args.finetune:
+        backbone_trainable_params = configure_backbone_finetune(model.backbone, current_finetune_layers)
     else:
         for param in model.backbone.parameters():
             param.requires_grad = False
         backbone_trainable_params = []
+
+    if args.finetune and total_backbone_blocks:
+        extra_needed = max(0, total_backbone_blocks - base_finetune_layers)
+        if args.disable_progressive_unfreeze or extra_needed <= 0:
+            final_unfreeze_epoch = start_epoch if extra_needed <= 0 else None
+        elif args.unfreeze_interval > 0:
+            final_unfreeze_epoch = args.initial_freeze_epochs + (extra_needed - 1) * args.unfreeze_interval
+        else:
+            final_unfreeze_epoch = None
+
+        msg = f"Backbone blocks: {total_backbone_blocks}. Initial trainable blocks: {current_finetune_layers}."
+        if final_unfreeze_epoch is None:
+            if args.disable_progressive_unfreeze and extra_needed > 0:
+                msg += " Progressive unfreeze disabled by flag."
+            else:
+                msg += " Progressive unfreeze disabled (unable to reach all blocks)."
+        else:
+            msg += f" Final unfreeze epoch: {final_unfreeze_epoch}."
+            if final_unfreeze_epoch >= args.max_epochs:
+                msg += " (scheduled beyond max_epochs)"
+        print(msg)
+
+        if (not args.disable_progressive_unfreeze and
+                base_finetune_layers < total_backbone_blocks and
+                args.unfreeze_interval > 0):
+            print(f"Progressive unfreeze scheduled after {args.initial_freeze_epochs} epochs, "
+                  f"adding one block every {args.unfreeze_interval} epochs.")
 
     inout_params = [param for name, param in model.named_parameters() if "inout" in name and param.requires_grad]
     other_head_params = [param for name, param in model.named_parameters() if "inout" not in name and not name.startswith("backbone") and param.requires_grad]
@@ -349,7 +404,9 @@ def main():
         param_groups.append({'params': inout_params, 'lr': args.lr_inout})
     if other_head_params:
         param_groups.append({'params': other_head_params, 'lr': args.lr_non_inout})
-    if args.finetune and backbone_trainable_params:
+    backbone_group_index = None
+    if args.finetune:
+        backbone_group_index = len(param_groups)
         param_groups.append({
             'params': backbone_trainable_params,
             'lr': args.backbone_lr,
@@ -388,6 +445,13 @@ def main():
         return
 
     for epoch in range(start_epoch, args.max_epochs):
+        if args.finetune and backbone_group_index is not None:
+            target_layers = _target_layers_for_epoch(epoch)
+            if target_layers > current_finetune_layers:
+                backbone_trainable_params = configure_backbone_finetune(model.backbone, target_layers)
+                current_finetune_layers = target_layers
+                optimizer.param_groups[backbone_group_index]["params"] = backbone_trainable_params
+                print(f"Progressive unfreeze: last {current_finetune_layers}/{total_backbone_blocks} backbone blocks now trainable.")
         # TRAIN EPOCH
         model.train()
         for cur_iter, batch in enumerate(train_dl):
