@@ -85,7 +85,7 @@ uv run python scripts/train_gazefollow.py \
 --grad_clip_norm 1.0 \
 --disable_sigmoid \
 --initial_freeze_epochs 5 \
---unfreeze_interval 3 \
+--unfreeze_interval 2 \
 --distill_teacher gazelle_dinov3_vitb16 \
 --distill_weight 0.3 \
 --distill_temp_end 4.0
