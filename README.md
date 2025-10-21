@@ -32,6 +32,9 @@ source .venv/bin/activate
   ```bash
   uv run python data_prep/preprocess_gazefollow.py \
   --data_path ./data/gazefollow_extended
+
+  uv run python data_prep/preprocess_vat.py \
+  --data_path ./data/videoattentiontarget
   ```
 
 ## Download pre-trained backbones
