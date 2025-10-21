@@ -44,6 +44,7 @@
 ### Optimizer and Losses
 - Adam optimizes both head and backbone parameters with separate parameter groups. `--lr` governs the head; `--backbone_lr` and optional weight decay apply to the unfrozen backbone subset.
 - The heatmap loss is `BCELoss` by default. When `--disable_sigmoid` is set, the model emits logits and the code switches to `BCEWithLogitsLoss`.
+- `BCEWithLogitsLoss` integrates the sigmoid transformation inside the loss function, which keeps gradients well-scaled for confident predictions and prevents numerical underflow that can arise from applying a separate sigmoid to large-magnitude logits; this stability is especially helpful when progressive unfreezing or distillation temporarily produces extreme activations.
 - VideoAttentionTarget training adds a BCE loss for the in/out classifier, scaled by `--inout_loss_lambda`; evaluation reports average precision.
 
 ### Knowledge Distillation
@@ -54,6 +55,7 @@
 ### Progressive Unfreeze
 - With `--finetune`, the script unfreezes the last `--finetune_layers` backbone blocks at the start.
 - After `--initial_freeze_epochs`, every `--unfreeze_interval` epochs one additional block becomes trainable until all blocks are included. Logging announces the schedule. `--disable_progressive_unfreeze` locks the number of trainable blocks.
+- Progressive unfreezing preserves the stability of a strong frozen backbone during the early, noise-prone training phase; once the head converges, gradually exposing deeper layers lets the optimizer adapt features without catastrophic forgetting, leading to smoother loss curves and stronger final accuracy.
 
 ### Stability and Throughput
 - Mixed precision (`torch.amp.autocast` + `GradScaler`) activates via `--use_amp`. `--grad_clip_norm` applies gradient clipping after optional unscaling.
