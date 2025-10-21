@@ -103,8 +103,8 @@ def _cosine_anneal(start: float, end: float, step: int, total_steps: int) -> flo
 
 DEFAULT_TEACHER_CKPTS = {
     # DINOv3
-    "gazelle_dinov3_vit_tiny": "./ckpts/vitt_distill.pt",
-    "gazelle_dinov3_vit_tinyplus": "./ckpts/vittplus_distill.pt",
+    "gazelle_dinov3_vit_tiny": "./ckpts/gazelle_dinov3_vit_tiny.pt",
+    "gazelle_dinov3_vit_tinyplus": "./ckpts/gazelle_dinov3_vit_tinyplus.pt",
     "gazelle_dinov3_vits16": "./ckpts/gazelle_dinov3_vits16.pt",
     "gazelle_dinov3_vits16plus": "./ckpts/gazelle_dinov3_vits16plus.pt",
     "gazelle_dinov3_vitb16": "./ckpts/gazelle_dinov3_vitb16.pt",
