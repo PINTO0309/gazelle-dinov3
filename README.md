@@ -251,19 +251,19 @@ High accuracy is not important to me at all. I'm only interested in whether the 
 
 - GazeFollow
 
-  |Variant<br>(D: Distillation)|Param<br>(Backbone+Head)|AUC ⬆️|Min L2 ⬇️|Avg L2 ⬇️|
-  |:-:|:-:|-:|-:|-:|
-  |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.8 M|0.956|0.045|0.104|
-  |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.9 M|0.958|0.041|0.099|
-  |S|8.17 M|0.9477|0.0598|0.1221|
-  |S (D)|8.17 M||||
-  |M|12.37 M||||
-  |M (D)|12.37 M||||
-  |L|24.33 M||||
-  |L (D)|24.33 M||||
-  |X|31.43 M|0.9554|0.0448|0.1035|
-  |X (D)|31.43 M||||
-  |XL|88.50 M|0.9593|0.0405|0.0973|
+  |Variant<br>(D: Distillation)|Param<br>(Backbone+Head)|AUC ⬆️|Min L2 ⬇️|Avg L2 ⬇️|Weight|
+  |:-:|:-:|-:|-:|-:|:-:|
+  |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.8 M|0.956|0.045|0.104|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14.pt)|
+  |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.9 M|0.958|0.041|0.099|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14.pt)|
+  |S|8.17 M|0.9477|0.0598|0.1221|Download|
+  |S (D)|8.17 M||||Download|
+  |M|12.37 M||||Download|
+  |M (D)|12.37 M||||Download|
+  |L|24.33 M||||Download|
+  |L (D)|24.33 M||||Download|
+  |X|31.43 M|0.9554|0.0448|0.1035|Download|
+  |X (D)|31.43 M||||Download|
+  |XL|88.50 M|0.9593|0.0405|0.0973|Download|
 
 ## Acknowledgments
 - https://github.com/fkryan/gazelle
