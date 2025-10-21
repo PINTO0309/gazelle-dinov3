@@ -257,9 +257,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.9 M|0.958|0.041|0.099|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14.pt)|
   |S|8.17 M|0.9477|0.0598|0.1221|Download|
   |S (D)|8.17 M||||Download|
-  |M|12.37 M||||Download|
   |M (D)|12.37 M||||Download|
-  |L|24.33 M||||Download|
   |L (D)|24.33 M||||Download|
   |X|31.43 M|0.9554|0.0448|0.1035|Download|
   |X (D)|31.43 M||||Download|
