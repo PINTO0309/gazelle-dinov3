@@ -301,7 +301,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |L (D)|24.33 M||||Download|
   |X|31.43 M|0.9554|0.0448|0.1035|Download|
   |X (D)|31.43 M||||Download|
-  |XL|88.50 M|0.9593|0.0405|0.0973|Download|
+  |XL (Teacher)|88.50 M|0.9593|0.0405|0.0973|Download|
 
 ## Acknowledgments
 - https://github.com/fkryan/gazelle
