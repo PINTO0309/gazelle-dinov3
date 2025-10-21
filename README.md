@@ -303,6 +303,10 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |X-distillation|**31.43 M**|**0.9604**|**0.0395**|**0.0966**|Download|
   |XL (Teacher)|88.50 M|0.9593|0.0405|0.0973|Download|
 
+- VideoAttentionTarget
+
+  WIP
+
 ## Acknowledgments
 - https://github.com/fkryan/gazelle
   ```bibtex
