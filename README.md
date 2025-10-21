@@ -315,8 +315,8 @@ High accuracy is not important to me at all. I'm only interested in whether the 
 
   |Variant|Param<br>(Backbone+Head)|AUC ⬆️|Min L2 ⬇️|Avg L2 ⬇️|Weight|
   |:-:|:-:|-:|-:|-:|:-:|
-  |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.8 M|0.956|0.045|0.104|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14.pt)|
-  |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.9 M|0.958|0.041|0.099|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14.pt)|
+  |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.8 M|0.9560|0.0450|0.1040|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14.pt)|
+  |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.9 M|0.9580|0.0410|0.0990|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14.pt)|
   |S-distillation|8.17 M|0.9545|0.0484|0.1118|Download|
   |M-distillation|12.37 M||||Download|
   |L-distillation|24.33 M|0.9593|0.0418|0.0992|Download|
