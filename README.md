@@ -124,6 +124,7 @@ uv run python scripts/train_gazefollow.py \
 --initial_freeze_epochs 10 \
 --unfreeze_interval 3
 
+### distillation - GH200
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vit_tinyplus \
@@ -173,6 +174,7 @@ uv run python scripts/train_gazefollow.py \
 --initial_freeze_epochs 10 \
 --unfreeze_interval 3
 
+### distillation - GH200
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vits16 \
@@ -222,6 +224,7 @@ uv run python scripts/train_gazefollow.py \
 --initial_freeze_epochs 10 \
 --unfreeze_interval 3
 
+### distillation - GH200
 uv run python scripts/train_gazefollow.py \
 --data_path data/gazefollow_extended \
 --model_name gazelle_dinov3_vits16plus \
