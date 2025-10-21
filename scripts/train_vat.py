@@ -14,6 +14,7 @@ from tqdm import tqdm
 from sklearn.metrics import average_precision_score
 import torch
 import torch.nn as nn
+from torch.amp import autocast, GradScaler
 from torch.utils.tensorboard import SummaryWriter
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -25,27 +26,46 @@ from gazelle.backbone import configure_backbone_finetune
 from gazelle.model import get_gazelle_model, GazeLLE
 from gazelle.utils import vat_auc, vat_l2
 
+"""
+--init_ckpt loads the student model’s starting weights before VAT training.
+This is always executed even if distillation is not used,
+and the backbone + head (In/Out heads can be untrained) pre-trained with
+GazeFollow is transplanted into the student model to improve initial performance.
+
+--distill_teacher is an argument that specifies the architecture name of
+the teacher model to use during distillation. This is only read when distill_weight
+is set to a positive value, and a teacher network is constructed with a separate
+get_gazelle_model call.
+
+DEFAULT_TEACHER_CKPTS is a default checkpoint table for each teacher model name.
+If you do not explicitly specify --distill_teacher_ckpt, the teacher weights
+will be searched here and loaded into the teacher model only with _load_teacher_weights.
+Therefore, --init_ckpt is the student initialization, --distill_teacher is
+the type of teacher model, and DEFAULT_TEACHER_CKPTS is the default weights assigned to
+the teacher.
+"""
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', type=str, default="gazelle_dinov2_vitb14_inout")
-parser.add_argument('--init_ckpt', type=str, default='./checkpoints/gazelle_dinov2_vitb14.pt', help='checkpoint for initialization (trained on GazeFollow)')
+parser.add_argument('--model', type=str, default="gazelle_dinov3_vitb16_inout")
+parser.add_argument('--init_ckpt', type=str, default='./checkpoints/gazelle_dinov3_vitb16.pt', help='checkpoint for initialization (trained on GazeFollow)')
 parser.add_argument('--data_path', type=str, default='./data/videoattentiontarget')
 parser.add_argument('--frame_sample_every', type=int, default=6)
 parser.add_argument('--ckpt_save_dir', type=str, default='./runs')
 parser.add_argument('--exp_name', type=str, default='train_vat')
 parser.add_argument('--log_dir', type=str, default='./runs')
-parser.add_argument('--log_iter', type=int, default=10, help='how often to log loss during training')
+parser.add_argument('--log_iter', type=int, default=50, help='how often to log loss during training')
 parser.add_argument('--max_epochs', type=int, default=8)
 parser.add_argument('--batch_size', type=int, default=60)
 parser.add_argument('--inout_loss_lambda', type=float, default=1.0)
 parser.add_argument('--lr_non_inout', type=float, default=1e-5)
 parser.add_argument('--lr_inout', type=float, default=1e-2)
 parser.add_argument('--n_workers', type=int, default=8)
+parser.add_argument('--use_amp', action='store_true', help='enable mixed precision training')
 parser.add_argument('--resume', type=str, default=None, help='path to checkpoint to resume training from')
 parser.add_argument('--finetune', action='store_true', help='enable finetuning of the backbone')
 parser.add_argument('--finetune_layers', type=int, default=2, help='number of final transformer blocks to finetune (<=0 means all)')
 parser.add_argument('--backbone_lr', type=float, default=1e-5, help='learning rate for finetuned backbone parameters')
 parser.add_argument('--backbone_weight_decay', type=float, default=0.0, help='weight decay applied to finetuned backbone parameters')
-parser.add_argument('--distill_teacher', type=str, default='gazelle_dinov3_vits16plus', help='teacher model name for knowledge distillation (only used when distill_weight > 0)')
+parser.add_argument('--distill_teacher', type=str, default='gazelle_dinov3_vitb16_inout', help='teacher model name for knowledge distillation (only used when distill_weight > 0)')
 parser.add_argument('--distill_weight', type=float, default=0.0, help='weight applied to the teacher heatmap loss; set <= 0 to disable distillation')
 parser.add_argument('--distill_temp_start', type=float, default=1.0, help='initial temperature for distillation soft targets')
 parser.add_argument('--distill_temp_end', type=float, default=4.0, help='final temperature reached via cosine schedule')
@@ -100,11 +120,11 @@ def _cosine_anneal(start: float, end: float, step: int, total_steps: int) -> flo
 
 DEFAULT_TEACHER_CKPTS = {
     # DINOv3
-    "gazelle_dinov3_vit_tiny": "./ckpts/vitt_distill.pt",
-    "gazelle_dinov3_vit_tinyplus": "./ckpts/vittplus_distill.pt",
-    "gazelle_dinov3_vits16": "./ckpts/gazelle_dinov3_vits16.pt",
-    "gazelle_dinov3_vits16plus": "./ckpts/gazelle_dinov3_vits16plus.pt",
-    "gazelle_dinov3_vitb16": "./ckpts/gazelle_dinov3_vitb16.pt",
+    "gazelle_dinov3_vit_tiny_inout": "./ckpts/gazelle_dinov3_vit_tiny_inout.pt",
+    "gazelle_dinov3_vit_tinyplus_inout": "./ckpts/gazelle_dinov3_vit_tinyplus_inout.pt",
+    "gazelle_dinov3_vits16_inout": "./ckpts/gazelle_dinov3_vits16_inout.pt",
+    "gazelle_dinov3_vits16plus_inout": "./ckpts/gazelle_dinov3_vits16plus_inout.pt",
+    "gazelle_dinov3_vitb16_inout": "./ckpts/gazelle_dinov3_vitb16_inout.pt",
     # DINOv2
     "gazelle_dinov2_vitb14": "./ckpts/gazelle_dinov2_vitb14.pt",
     "gazelle_dinov2_vitl14": "./ckpts/gazelle_dinov2_vitl14.pt",
@@ -145,7 +165,7 @@ def _load_teacher_weights(model: GazeLLE, ckpt_path: Path) -> bool:
 
 
 def save_checkpoint(path, model: GazeLLE, optimizer: torch.optim.Optimizer, epoch, train_global_step, best_inout_ap,
-                    timestamp, exp_dir, log_dir, resume_args, include_backbone: bool = True):
+                    timestamp, exp_dir, log_dir, resume_args, include_backbone: bool = True, scaler_state=None):
     resume_args = dict(resume_args)
     checkpoint = {
         "model": _prepare_model_state_dict(model, include_backbone=include_backbone),
@@ -160,6 +180,8 @@ def save_checkpoint(path, model: GazeLLE, optimizer: torch.optim.Optimizer, epoc
         "max_epochs": resume_args.get("max_epochs"),
         "rng_state": _collect_rng_state(),
     }
+    if scaler_state is not None:
+        checkpoint["scaler"] = scaler_state
     torch.save(checkpoint, path)
 
 
@@ -245,7 +267,7 @@ def main():
 
         for field in ("finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay",
                       "distill_teacher", "distill_weight", "distill_temp_start", "distill_temp_end",
-                      "distill_teacher_ckpt"):
+                      "distill_teacher_ckpt", "use_amp"):
             restore_arg(field)
 
         timestamp = resume_checkpoint.get("timestamp") or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -268,6 +290,7 @@ def main():
     if resume_checkpoint is not None:
         writer_kwargs["purge_step"] = train_global_step
     writer = SummaryWriter(**writer_kwargs)
+    scaler = GradScaler('cuda', enabled=args.use_amp)
 
     model, transform = get_gazelle_model(args.model, finetune_backbone=args.finetune)
     if resume_checkpoint is None:
@@ -342,6 +365,8 @@ def main():
         if resume_checkpoint.get("max_epochs") and resume_checkpoint["max_epochs"] != args.max_epochs:
             print(f"WARNING: resume checkpoint was created with max_epochs={resume_checkpoint['max_epochs']}, "
                   f"but current run uses max_epochs={args.max_epochs}.")
+        if args.use_amp and resume_checkpoint.get("scaler") is not None:
+            scaler.load_state_dict(resume_checkpoint["scaler"])
 
     train_dataset = GazeDataset('videoattentiontarget', args.data_path, 'train', transform, in_frame_only=False, sample_rate=args.frame_sample_every)
     train_dl = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=args.n_workers)
@@ -362,20 +387,27 @@ def main():
             imgs, bboxes, gazex, gazey, inout, heights, widths, heatmaps = batch
 
             optimizer.zero_grad()
-            imgs_cuda = imgs.cuda()
+            imgs_cuda = imgs.cuda(non_blocking=True)
+            heatmaps_cuda = heatmaps.cuda(non_blocking=True)
+            inout_cuda = inout.cuda(non_blocking=True)
             bbox_inputs = [[bbox] for bbox in bboxes]
-            preds = model({"images": imgs_cuda, "bboxes": bbox_inputs})
-            heatmap_preds = torch.stack(preds['heatmap']).squeeze(dim=1)
-            inout_preds = torch.stack(preds['inout']).squeeze(dim=1)
+            mask = inout_cuda.bool()
 
-            # compute heatmap loss only for in-frame gaze targets
-            heatmap_loss = heatmap_loss_fn(heatmap_preds[inout.bool()], heatmaps[inout.bool()].cuda())
-            inout_loss = inout_loss_fn(inout_preds, inout.float().cuda())
-            loss = heatmap_loss + args.inout_loss_lambda * inout_loss
+            with autocast('cuda', enabled=args.use_amp):
+                preds = model({"images": imgs_cuda, "bboxes": bbox_inputs})
+                heatmap_preds = torch.stack(preds['heatmap']).squeeze(dim=1)
+                inout_preds = torch.stack(preds['inout']).squeeze(dim=1)
 
+                if mask.any():
+                    heatmap_loss = heatmap_loss_fn(heatmap_preds[mask], heatmaps_cuda[mask])
+                else:
+                    heatmap_loss = heatmap_preds.sum() * 0
+                inout_loss = inout_loss_fn(inout_preds, inout_cuda.float())
+                loss = heatmap_loss + args.inout_loss_lambda * inout_loss
+
+            temperature = None
+            distill_loss = None
             if distill_enabled:
-                temperature = None
-                distill_loss = None
                 current_step = epoch * len(train_dl) + cur_iter
                 temperature = _cosine_anneal(
                     args.distill_temp_start,
@@ -385,10 +417,12 @@ def main():
                 )
                 temperature = max(1e-6, temperature)
                 with torch.no_grad():
-                    teacher_preds = teacher_model({"images": imgs_cuda, "bboxes": bbox_inputs})
-                    teacher_heatmaps = torch.stack(teacher_preds['heatmap']).squeeze(dim=1)
+                    with autocast('cuda', enabled=args.use_amp):
+                        teacher_preds = teacher_model({"images": imgs_cuda, "bboxes": bbox_inputs})
+                        teacher_heatmaps = torch.stack(teacher_preds['heatmap']).squeeze(dim=1)
+                student_heatmaps = heatmap_preds.float() if args.use_amp else heatmap_preds
                 teacher_heatmaps = teacher_heatmaps.float()
-                student_logits = torch.logit(heatmap_preds, eps=1e-6)
+                student_logits = torch.logit(student_heatmaps, eps=1e-6)
                 teacher_logits = torch.logit(teacher_heatmaps, eps=1e-6)
                 student_logits_flat = (student_logits / temperature).view(student_logits.shape[0], -1)
                 teacher_logits_flat = (teacher_logits / temperature).view(teacher_logits.shape[0], -1)
@@ -396,8 +430,14 @@ def main():
                 teacher_probs = torch.softmax(teacher_logits_flat, dim=1)
                 distill_loss = distill_loss_fn(student_log_probs, teacher_probs) * (temperature ** 2)
                 loss = loss + args.distill_weight * distill_loss
-            loss.backward()
-            optimizer.step()
+
+            if args.use_amp:
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                loss.backward()
+                optimizer.step()
 
             if cur_iter % args.log_iter == 0:
                 writer.add_scalar("train/loss", loss.item(), train_global_step)
@@ -422,10 +462,14 @@ def main():
             imgs, bboxes, gazex, gazey, inout, heights, widths = batch
 
             with torch.no_grad():
-                preds = model({"images": imgs.cuda(), "bboxes": [[bbox] for bbox in bboxes]})
+                with autocast('cuda', enabled=args.use_amp):
+                    preds = model({"images": imgs.cuda(), "bboxes": [[bbox] for bbox in bboxes]})
 
             heatmap_preds = torch.stack(preds['heatmap']).squeeze(dim=1)
             inout_preds = torch.stack(preds['inout']).squeeze(dim=1)
+            if args.use_amp:
+                heatmap_preds = heatmap_preds.float()
+                inout_preds = inout_preds.float()
             for i in range(heatmap_preds.shape[0]):
                 if inout[i] == 1: # in-frame
                     auc = vat_auc(heatmap_preds[i], gazex[i][0], gazey[i][0])
@@ -460,6 +504,7 @@ def main():
             exp_dir,
             log_dir,
             vars(args),
+            scaler_state=scaler.state_dict() if args.use_amp else None,
         )
         print(f"Saved checkpoint to {ckpt_path}")
         prune_epoch_checkpoints(exp_dir, keep=1)
@@ -478,6 +523,7 @@ def main():
                 exp_dir,
                 log_dir,
                 vars(args),
+                scaler_state=scaler.state_dict() if args.use_amp else None,
             )
             print(f"Saved best checkpoint to {best_ckpt_path}")
             legacy_best = os.path.join(exp_dir, "best.pt")
