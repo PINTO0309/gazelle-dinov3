@@ -283,20 +283,24 @@ uv run python scripts/train_gazefollow.py \
 
 ```
 ############################################# XL
-### GH200
+### backbone finetune - GH200
 uv run python scripts/train_vat.py \
 --data_path data/videoattentiontarget \
 --model_name gazelle_dinov3_vitb16_inout \
 --exp_name gazelle_dinov3_xl_inout \
 --frame_sample_every 6 \
 --log_iter 50 \
---max_epochs 8 \
+--max_epochs 15 \
 --batch_size 64 \
 --lr 1e-3 \
 --n_workers 50 \
 --use_amp \
+--finetune \
+--finetune_layers 2 \
 --grad_clip_norm 1.0 \
---disable_sigmoid
+--disable_sigmoid \
+--initial_freeze_epochs 1 \
+--unfreeze_interval 1
 ```
 
 </details>
