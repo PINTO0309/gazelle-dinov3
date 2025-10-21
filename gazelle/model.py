@@ -451,7 +451,7 @@ def gazelle_dinov2_vitb14_inout(onnx_export, apply_sigmoid=True):
     backbone = DinoV2Backbone('dinov2_vitb14')
     transform = backbone.get_transform((448, 448))
     if not onnx_export:
-        model = GazeLLE(backbone, apply_sigmoid=apply_sigmoid)
+        model = GazeLLE(backbone, inout=True, apply_sigmoid=apply_sigmoid)
     else:
         model = GazeLLE_ONNX(backbone, inout=True, apply_sigmoid=apply_sigmoid)
     return model, transform
@@ -460,7 +460,7 @@ def gazelle_dinov2_vitl14_inout(onnx_export, apply_sigmoid=True):
     backbone = DinoV2Backbone('dinov2_vitl14')
     transform = backbone.get_transform((448, 448))
     if not onnx_export:
-        model = GazeLLE(backbone, apply_sigmoid=apply_sigmoid)
+        model = GazeLLE(backbone, inout=True, apply_sigmoid=apply_sigmoid)
     else:
         model = GazeLLE_ONNX(backbone, inout=True, apply_sigmoid=apply_sigmoid)
     return model, transform
@@ -618,7 +618,7 @@ def gazelle_dinov3_vit_tiny_inout(
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+        model = GazeLLE(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     else:
         model = GazeLLE_ONNX(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     return model, transform
@@ -644,7 +644,7 @@ def gazelle_dinov3_vit_tinyplus_inout(
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+        model = GazeLLE(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     else:
         model = GazeLLE_ONNX(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     return model, transform
@@ -670,7 +670,7 @@ def gazelle_dinov3_vits16_inout(
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+        model = GazeLLE(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     else:
         model = GazeLLE_ONNX(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     return model, transform
@@ -696,7 +696,7 @@ def gazelle_dinov3_vits16plus_inout(
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+        model = GazeLLE(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     else:
         model = GazeLLE_ONNX(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     return model, transform
@@ -722,7 +722,7 @@ def gazelle_dinov3_vitb16_inout(
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+        model = GazeLLE(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     else:
         model = GazeLLE_ONNX(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
     return model, transform

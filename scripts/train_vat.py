@@ -65,6 +65,8 @@ parser.add_argument('--finetune', action='store_true', help='enable finetuning o
 parser.add_argument('--finetune_layers', type=int, default=2, help='number of final transformer blocks to finetune (<=0 means all)')
 parser.add_argument('--backbone_lr', type=float, default=1e-5, help='learning rate for finetuned backbone parameters')
 parser.add_argument('--backbone_weight_decay', type=float, default=0.0, help='weight decay applied to finetuned backbone parameters')
+parser.add_argument('--grad_clip_norm', type=float, default=1.0, help='max norm for gradient clipping (<=0 to disable)')
+parser.add_argument('--disable_sigmoid', action='store_true', help='predict raw logits and use BCEWithLogitsLoss')
 parser.add_argument('--distill_teacher', type=str, default='gazelle_dinov3_vitb16_inout', help='teacher model name for knowledge distillation (only used when distill_weight > 0)')
 parser.add_argument('--distill_weight', type=float, default=0.0, help='weight applied to the teacher heatmap loss; set <= 0 to disable distillation')
 parser.add_argument('--distill_temp_start', type=float, default=1.0, help='initial temperature for distillation soft targets')
@@ -267,7 +269,7 @@ def main():
 
         for field in ("finetune", "finetune_layers", "backbone_lr", "backbone_weight_decay",
                       "distill_teacher", "distill_weight", "distill_temp_start", "distill_temp_end",
-                      "distill_teacher_ckpt", "use_amp"):
+                      "distill_teacher_ckpt", "use_amp", "disable_sigmoid", "grad_clip_norm"):
             restore_arg(field)
 
         timestamp = resume_checkpoint.get("timestamp") or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -292,7 +294,11 @@ def main():
     writer = SummaryWriter(**writer_kwargs)
     scaler = GradScaler('cuda', enabled=args.use_amp)
 
-    model, transform = get_gazelle_model(args.model, finetune_backbone=args.finetune)
+    model, transform = get_gazelle_model(
+        args.model,
+        finetune_backbone=args.finetune,
+        apply_sigmoid=not args.disable_sigmoid,
+    )
     if resume_checkpoint is None:
         print("Initializing from {}".format(args.init_ckpt))
         model.load_gazelle_state_dict(torch.load(args.init_ckpt, weights_only=True), include_backbone=True) # initializing from ckpt without inout head
@@ -311,6 +317,7 @@ def main():
         teacher_model, _ = get_gazelle_model(
             args.distill_teacher,
             finetune_backbone=False,
+            apply_sigmoid=not args.disable_sigmoid,
         )
         teacher_ckpt_path = _resolve_teacher_ckpt(args.distill_teacher, args.distill_teacher_ckpt)
         if teacher_ckpt_path is None:
@@ -354,7 +361,7 @@ def main():
 
     _log_param_summary(model, backbone_trainable_params)
 
-    heatmap_loss_fn = nn.BCELoss()
+    heatmap_loss_fn = nn.BCEWithLogitsLoss() if args.disable_sigmoid else nn.BCELoss()
     inout_loss_fn = nn.BCELoss()
 
     if resume_checkpoint is not None:
@@ -420,10 +427,14 @@ def main():
                     with autocast('cuda', enabled=args.use_amp):
                         teacher_preds = teacher_model({"images": imgs_cuda, "bboxes": bbox_inputs})
                         teacher_heatmaps = torch.stack(teacher_preds['heatmap']).squeeze(dim=1)
-                student_heatmaps = heatmap_preds.float() if args.use_amp else heatmap_preds
-                teacher_heatmaps = teacher_heatmaps.float()
-                student_logits = torch.logit(student_heatmaps, eps=1e-6)
-                teacher_logits = torch.logit(teacher_heatmaps, eps=1e-6)
+                student_values = heatmap_preds.float() if args.use_amp else heatmap_preds
+                teacher_values = teacher_heatmaps.float()
+                if args.disable_sigmoid:
+                    student_logits = student_values
+                    teacher_logits = teacher_values
+                else:
+                    student_logits = torch.logit(student_values, eps=1e-6)
+                    teacher_logits = torch.logit(teacher_values, eps=1e-6)
                 student_logits_flat = (student_logits / temperature).view(student_logits.shape[0], -1)
                 teacher_logits_flat = (teacher_logits / temperature).view(teacher_logits.shape[0], -1)
                 student_log_probs = torch.log_softmax(student_logits_flat, dim=1)
@@ -431,13 +442,13 @@ def main():
                 distill_loss = distill_loss_fn(student_log_probs, teacher_probs) * (temperature ** 2)
                 loss = loss + args.distill_weight * distill_loss
 
-            if args.use_amp:
-                scaler.scale(loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
-            else:
-                loss.backward()
-                optimizer.step()
+            scaler.scale(loss).backward()
+            if args.grad_clip_norm and args.grad_clip_norm > 0:
+                if args.use_amp:
+                    scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip_norm)
+            scaler.step(optimizer)
+            scaler.update()
 
             if cur_iter % args.log_iter == 0:
                 writer.add_scalar("train/loss", loss.item(), train_global_step)
@@ -467,13 +478,17 @@ def main():
 
             heatmap_preds = torch.stack(preds['heatmap']).squeeze(dim=1)
             inout_preds = torch.stack(preds['inout']).squeeze(dim=1)
+            if args.disable_sigmoid:
+                heatmap_probs = torch.sigmoid(heatmap_preds)
+            else:
+                heatmap_probs = heatmap_preds
             if args.use_amp:
-                heatmap_preds = heatmap_preds.float()
+                heatmap_probs = heatmap_probs.float()
                 inout_preds = inout_preds.float()
-            for i in range(heatmap_preds.shape[0]):
+            for i in range(heatmap_probs.shape[0]):
                 if inout[i] == 1: # in-frame
-                    auc = vat_auc(heatmap_preds[i], gazex[i][0], gazey[i][0])
-                    l2 = vat_l2(heatmap_preds[i], gazex[i][0], gazey[i][0])
+                    auc = vat_auc(heatmap_probs[i], gazex[i][0], gazey[i][0])
+                    l2 = vat_l2(heatmap_probs[i], gazex[i][0], gazey[i][0])
                     aucs.append(auc)
                     l2s.append(l2)
                 all_inout_preds.append(inout_preds[i].item())
