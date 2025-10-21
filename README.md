@@ -49,6 +49,8 @@ Dwonloads DINOv3 pretrain pth: From https://github.com/facebookresearch/dinov3 t
 
 <details><summary>Training Scripts</summary>
 
+### GazeFollow
+
 ```
 ############################################# S
 ### backbone finetune - GH200
@@ -275,6 +277,26 @@ uv run python scripts/train_gazefollow.py \
 | Head trainable     |       2.83 |
 | Frozen params      |      57.31 |
 └--------------------┴------------┘
+```
+
+### VideoAttentionTarget
+
+```
+############################################# XL
+### GH200
+uv run python scripts/train_vat.py \
+--data_path data/videoattentiontarget \
+--model_name gazelle_dinov3_vitb16_inout \
+--exp_name gazelle_dinov3_xl_inout \
+--frame_sample_every 6 \
+--log_iter 50 \
+--max_epochs 8 \
+--batch_size 64 \
+--lr 1e-3 \
+--n_workers 50 \
+--use_amp \
+--grad_clip_norm 1.0 \
+--disable_sigmoid
 ```
 
 </details>
