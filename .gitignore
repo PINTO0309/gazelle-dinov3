@@ -1,4 +1,5 @@
 data/gazefollow_extended/
+data/videoattentiontarget/
 *.pt*
 *.onnx
 *.engine
