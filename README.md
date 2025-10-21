@@ -177,6 +177,26 @@ uv run python scripts/train_gazefollow.py \
 --initial_freeze_epochs 10 \
 --unfreeze_interval 3
 
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_dinov3_vits16plus \
+--exp_name gazelle_dinov3_x_ft_bcelogits_prog_distill \
+--log_iter 50 \
+--max_epochs 35 \
+--batch_size 64 \
+--lr 1e-3 \
+--n_workers 50 \
+--use_amp \
+--finetune \
+--finetune_layers 2 \
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--initial_freeze_epochs 5 \
+--unfreeze_interval 2 \
+--distill_teacher gazelle_dinov3_vitb16 \
+--distill_weight 0.3 \
+--distill_temp_end 4.0
+
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Category           ┃ Params [M] ┃
 ┗━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛
