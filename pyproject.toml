@@ -1,6 +1,6 @@
 [project]
 name = "gazelle-dinov3"
-version = "0.1.0"
+version = "1.0.0"
 description = "Gaze-LLE-DINOv3: Gaze Target Estimation via Large-Scale Learned Encoders with DINOv3"
 readme = "README.md"
 requires-python = "==3.11.12"

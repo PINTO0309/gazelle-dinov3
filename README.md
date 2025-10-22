@@ -352,6 +352,22 @@ High accuracy is not important to me at all. I'm only interested in whether the 
 
   WIP
 
+## Citiation
+If you find this project useful, please consider citing:
+```bibtex
+@software{Hyodo_2025_gazelle_dinov3,
+  author    = {Katsuya Hyodo},
+  title     = {gazelle-dinov3: Gaze-LLE-DINOv3},
+  year      = {2025},
+  month     = {oct},
+  publisher = {Zenodo},
+  version   = {1.0.0},
+  doi       = {10.5281/zenodo.17413165},
+  url       = {https://github.com/PINTO0309/gazelle-dinov3},
+  abstract  = {A model for activating human gaze regions using heat maps, built with DINOv3.},
+}
+```
+
 ## Acknowledgments
 - https://github.com/fkryan/gazelle
   ```bibtex
