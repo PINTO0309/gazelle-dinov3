@@ -1,6 +1,6 @@
 # gazelle-dinov3
 
-[![DOI](https://zenodo.org/badge/1078614133.svg)](https://doi.org/10.5281/zenodo.17413165)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17413165.svg)](https://doi.org/10.5281/zenodo.17413165)
 
 > [!Note]
 > **October 22, 2025 :** A checkpoint file `.pt` containing GazeFollow's trained weights and statistical information has been released.
