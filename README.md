@@ -352,7 +352,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
 
   WIP
 
-## Citiation
+## Citation
 If you find this project useful, please consider citing:
 ```bibtex
 @software{Hyodo_2025_gazelle_dinov3,
