@@ -48,11 +48,11 @@ class GazeLLE(nn.Module):
             nn.Conv2d(dim, 1, kernel_size=1, bias=False),
         )
         if self.inout:
+            # A single linear layer works better in practice – the previous MLP
+            # tended to collapse to a constant output (matching the dataset prior)
+            # even though the transformer token carries useful information.
             self.inout_head = nn.Sequential(
-                nn.Linear(self.dim, 128),
-                nn.GELU(),
-                nn.Dropout(0.1),
-                nn.Linear(128, 1),
+                nn.Linear(self.dim, 1),
             )
 
     def forward(self, input):
@@ -141,7 +141,13 @@ class GazeLLE(nn.Module):
             print("WARNING provided state dict does not have values for keys: ", keys1 - keys2)
 
         for k in list(keys1 & keys2):
-            current_state_dict[k] = ckpt_state_dict[k]
+            v_src = ckpt_state_dict[k]
+            v_dst = current_state_dict[k]
+            if isinstance(v_src, torch.Tensor) and isinstance(v_dst, torch.Tensor):
+                if v_src.shape != v_dst.shape:
+                    print(f"WARNING: skipping key '{k}' due to shape mismatch ({tuple(v_src.shape)} != {tuple(v_dst.shape)})")
+                    continue
+            current_state_dict[k] = v_src
 
         self.load_state_dict(current_state_dict, strict=False)
 
@@ -185,11 +191,8 @@ class GazeLLE_ONNX(nn.Module):
         self.head_token = nn.Embedding(1, self.dim)
         if self.inout:
             self.inout_head = nn.Sequential(
-                nn.Linear(self.dim, 128),
-                nn.GELU(),
-                nn.Dropout(0.1),
-                nn.Linear(128, 1),
-                nn.Sigmoid()
+                nn.Linear(self.dim, 1),
+                nn.Sigmoid(),
             )
             self.inout_token = nn.Embedding(1, self.dim)
 
