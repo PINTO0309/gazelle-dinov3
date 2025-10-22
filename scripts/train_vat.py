@@ -358,7 +358,7 @@ def main():
     if resume_checkpoint is not None:
         writer_kwargs["purge_step"] = train_global_step
     writer = SummaryWriter(**writer_kwargs)
-    scaler = GradScaler('cuda', enabled=args.use_amp, init_scale=1.0, growth_factor=1.01, backoff_factor=0.5, growth_interval=1000)
+    scaler = GradScaler('cuda', enabled=args.use_amp, init_scale=1024.0)
 
     model, transform = get_gazelle_model(
         args.model_name,
@@ -482,7 +482,7 @@ def main():
     _log_param_summary(model, backbone_trainable_params)
 
     heatmap_loss_fn = nn.BCEWithLogitsLoss() if args.disable_sigmoid else nn.BCELoss()
-    inout_loss_fn = nn.BCEWithLogitsLoss()
+    inout_loss_fn = nn.BCELoss()
 
     if resume_checkpoint is not None:
         model.load_gazelle_state_dict(resume_checkpoint["model"], include_backbone=True)
@@ -530,8 +530,7 @@ def main():
             with autocast('cuda', enabled=args.use_amp):
                 preds = model({"images": imgs_cuda, "bboxes": bbox_inputs})
                 heatmap_preds = torch.stack(preds['heatmap']).squeeze(dim=1)
-                inout_probs = torch.stack(preds['inout']).squeeze(dim=1)
-                inout_logits = torch.stack(preds['inout_logits']).squeeze(dim=1)
+                inout_preds = torch.stack(preds['inout']).squeeze(dim=1)
 
             if args.use_amp:
                 heatmap_inputs = heatmap_preds.float()
@@ -545,13 +544,12 @@ def main():
             else:
                 heatmap_loss = heatmap_inputs.sum() * 0
 
-            logits_inout = inout_logits.float()
             target_inout = inout_cuda.float()
             if args.use_amp:
                 with autocast('cuda', enabled=False):
-                    inout_loss = inout_loss_fn(logits_inout, target_inout)
+                    inout_loss = inout_loss_fn(inout_preds.float(), target_inout)
             else:
-                inout_loss = inout_loss_fn(logits_inout, target_inout)
+                inout_loss = inout_loss_fn(inout_preds, target_inout)
             loss = heatmap_loss + args.inout_loss_lambda * inout_loss
 
             temperature = None

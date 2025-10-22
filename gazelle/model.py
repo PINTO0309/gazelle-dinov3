@@ -50,7 +50,7 @@ class GazeLLE(nn.Module):
         if self.inout:
             self.inout_head = nn.Sequential(
                 nn.Linear(self.dim, 128),
-                nn.ReLU(),
+                nn.GELU(),
                 nn.Dropout(0.1),
                 nn.Linear(128, 1),
                 nn.Sigmoid()
@@ -76,14 +76,11 @@ class GazeLLE(nn.Module):
         x: torch.Tensor = self.transformer(x)
 
         inout_preds = None
-        inout_logits_split = None
         if self.inout:
             inout_tokens = x[:, 0, :]
-            inout_logits: torch.Tensor = self.inout_head[:-1](inout_tokens)
-            inout_logits = inout_logits.squeeze(dim=-1)
-            inout_probs = torch.sigmoid(inout_logits)
-            inout_preds = utils.split_tensors(inout_probs, num_ppl_per_img)
-            inout_logits_split = utils.split_tensors(inout_logits, num_ppl_per_img)
+            inout_preds = self.inout_head(inout_tokens)
+            inout_preds = inout_preds.squeeze(dim=-1)
+            inout_preds = utils.split_tensors(inout_preds, num_ppl_per_img)
             x = x[:, 1:, :] # slice off inout tokens from scene tokens
 
         x = x.reshape(x.shape[0], self.featmap_h, self.featmap_w, x.shape[2]).permute(0, 3, 1, 2) # b (h w) c -> b c h w
@@ -94,11 +91,7 @@ class GazeLLE(nn.Module):
         x = F.resize(x, self.out_size, antialias=False)
         heatmap_preds = utils.split_tensors(x, num_ppl_per_img) # resplit per image
 
-        return {
-            "heatmap": heatmap_preds,
-            "inout": inout_preds,
-            "inout_logits": inout_logits_split,
-        }
+        return {"heatmap": heatmap_preds, "inout": inout_preds if self.inout else None}
 
     def get_input_head_maps(self, bboxes):
         # bboxes: [[(xmin, ymin, xmax, ymax)]] - list of list of head bboxes per image
@@ -190,7 +183,7 @@ class GazeLLE_ONNX(nn.Module):
         if self.inout:
             self.inout_head = nn.Sequential(
                 nn.Linear(self.dim, 128),
-                nn.ReLU(),
+                nn.GELU(),
                 nn.Dropout(0.1),
                 nn.Linear(128, 1),
                 nn.Sigmoid()
@@ -218,18 +211,16 @@ class GazeLLE_ONNX(nn.Module):
         x = x + head_map_embeddings
         x = x.flatten(start_dim=2).permute(0, 2, 1) # "b c h w -> b (h w) c"
 
-        inout_preds = None
-        inout_logits_split = None
         if self.inout:
             x = torch.cat([self.inout_token.weight.unsqueeze(dim=0).repeat(x.shape[0], 1, 1), x], dim=1)
 
         x = self.transformer(x)
 
+        inout_preds = None
         if self.inout:
             inout_tokens = x[:, 0, :]
-            inout_logits: torch.Tensor = self.inout_head[:-1](inout_tokens)
-            inout_logits = inout_logits.squeeze(dim=-1)
-            inout_preds = torch.sigmoid(inout_logits)
+            inout_preds: torch.Tensor = self.inout_head(inout_tokens)
+            inout_preds = inout_preds.squeeze(dim=-1)
             x = x[:, 1:, :] # slice off inout tokens from scene tokens
 
         x = x.reshape(x.shape[0], self.featmap_h, self.featmap_w, x.shape[2]).permute(0, 3, 1, 2) # b (h w) c -> b c h w
@@ -239,7 +230,7 @@ class GazeLLE_ONNX(nn.Module):
         heatmap_preds = torch.nn.functional.interpolate(x, self.out_size, antialias=False)
         heatmap_preds = heatmap_preds[:, 0, ...]
 
-        return {"heatmap": heatmap_preds, "inout": inout_preds, "inout_logits": inout_logits if self.inout else None}
+        return {"heatmap": heatmap_preds, "inout": inout_preds if self.inout else None}
 
     def get_input_head_maps(self, bboxes: torch.Tensor):
         # bboxes: [[(xmin, ymin, xmax, ymax)]] - list of list of head bboxes per image
