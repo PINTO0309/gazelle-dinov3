@@ -1,6 +1,10 @@
 # gazelle-dinov3
 
-> [!warning]
+[![DOI](https://zenodo.org/badge/1078614133.svg)](https://doi.org/10.5281/zenodo.17413165)
+
+> [!Note]
+> **October 22, 2025 :** A checkpoint file `.pt` containing GazeFollow's trained weights and statistical information has been released.
+> 
 > **October 19, 2025 :** I am continuing to experiment to achieve better accuracy, so this repository is still a work in progress.
 
 A model for activating human gaze regions using heat maps. Built with DINOv3
@@ -339,15 +343,31 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |:-:|:-:|-:|-:|-:|:-:|
   |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.80 M|0.9560|0.0450|0.1040|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14.pt)|
   |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.90 M|0.9580|0.0410|0.0990|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14.pt)|
-  |S-distillation|8.17 M|0.9545|0.0484|0.1118|Download|
-  |M-distillation|12.37 M|0.9564|0.0462|0.1042|Download|
-  |L-distillation|24.33 M|0.9593|0.0418|0.0992|Download|
-  |X-distillation|**31.43 M**|**0.9604**|**0.0395**|**0.0966**|Download|
-  |XL (Teacher)|88.50 M|0.9593|0.0405|0.0973|Download|
+  |S-distillation|8.17 M|0.9545|0.0484|0.1118|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tiny.pt)|
+  |M-distillation|12.37 M|0.9564|0.0462|0.1042|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tinyplus.pt)|
+  |L-distillation|24.33 M|0.9593|0.0418|0.0992|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16.pt)|
+  |X-distillation|**31.43 M**|**0.9604**|**0.0395**|**0.0966**|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16plus.pt)|
+  |XL (Teacher)|88.50 M|0.9593|0.0405|0.0973|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16.pt)|
 
 - VideoAttentionTarget
 
   WIP
+
+## Citation
+If you find this project useful, please consider citing:
+```bibtex
+@software{Hyodo_2025_gazelle_dinov3,
+  author    = {Katsuya Hyodo},
+  title     = {gazelle-dinov3: Gaze-LLE-DINOv3},
+  year      = {2025},
+  month     = {oct},
+  publisher = {Zenodo},
+  version   = {1.0.0},
+  doi       = {10.5281/zenodo.17413165},
+  url       = {https://github.com/PINTO0309/gazelle-dinov3},
+  abstract  = {A model for activating human gaze regions using heat maps, built with DINOv3.},
+}
+```
 
 ## Acknowledgments
 - https://github.com/fkryan/gazelle
