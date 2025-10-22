@@ -10,6 +10,9 @@ from typing import Dict, Optional
 from pathlib import Path
 import glob
 import math
+import pickle
+import importlib
+import re
 from tqdm import tqdm
 from sklearn.metrics import average_precision_score
 import torch
@@ -169,6 +172,65 @@ def _load_teacher_weights(model: GazeLLE, ckpt_path: Path) -> bool:
     return True
 
 
+def _load_init_checkpoint(path: str):
+    load_kwargs = {"map_location": "cpu"}
+
+    def _torch_load(weights_only_flag: bool):
+        try:
+            return torch.load(path, weights_only=weights_only_flag, **load_kwargs)
+        except TypeError:
+            # Older PyTorch without weights_only support.
+            return torch.load(path, **load_kwargs)
+
+    add_safe_globals = getattr(torch.serialization, "add_safe_globals", None)
+    def _normalize_state(state):
+        if isinstance(state, dict):
+            for key in ("model", "state_dict"):
+                candidate = state.get(key)
+                if isinstance(candidate, dict):
+                    return candidate
+        return state
+
+    if add_safe_globals is None:
+        try:
+            return _normalize_state(_torch_load(True))
+        except pickle.UnpicklingError:
+            print("WARNING: torch.load(weights_only=True) failed; retrying with weights_only=False. Only do this if the checkpoint is trusted.")
+            return _normalize_state(_torch_load(False))
+
+    unsupported = set()
+    while True:
+        try:
+            return _normalize_state(_torch_load(True))
+        except pickle.UnpicklingError as error:
+            message = str(error)
+            candidate = None
+            match = re.search(r"Unsupported global: GLOBAL ([^ ]+)", message)
+            if match:
+                candidate = match.group(1)
+            else:
+                match = re.search(r"but got <class '([^']+)'>", message)
+                if match:
+                    candidate = match.group(1)
+            if candidate is None:
+                print("WARNING: torch.load(weights_only=True) failed with an unknown global. Retrying with weights_only=False.")
+                break
+            if candidate in unsupported:
+                print(f"WARNING: torch.load(weights_only=True) repeatedly failed due to {candidate}. Retrying with weights_only=False.")
+                break
+            try:
+                module_path, attr_name = candidate.rsplit(".", 1)
+                module = importlib.import_module(module_path)
+                obj = getattr(module, attr_name)
+                add_safe_globals([obj])
+                unsupported.add(candidate)
+                continue
+            except Exception as resolve_error:
+                print(f"WARNING: unable to allowlist {candidate} ({resolve_error}). Retrying with weights_only=False.")
+                break
+    return _normalize_state(_torch_load(False))
+
+
 def save_checkpoint(path, model: GazeLLE, optimizer: torch.optim.Optimizer, epoch, train_global_step, best_inout_ap,
                     timestamp, exp_dir, log_dir, resume_args, include_backbone: bool = True, scaler_state=None):
     resume_args = dict(resume_args)
@@ -305,7 +367,8 @@ def main():
     )
     if resume_checkpoint is None:
         print("Initializing from {}".format(args.init_ckpt))
-        model.load_gazelle_state_dict(torch.load(args.init_ckpt, weights_only=True), include_backbone=True) # initializing from ckpt without inout head
+        init_state = _load_init_checkpoint(args.init_ckpt)
+        model.load_gazelle_state_dict(init_state, include_backbone=True)  # initializing from ckpt without inout head
     else:
         print(f"Resuming training from {args.resume} at epoch {start_epoch}")
     model.cuda()
