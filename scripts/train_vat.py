@@ -532,13 +532,17 @@ def main():
                 heatmap_preds = torch.stack(preds['heatmap']).squeeze(dim=1)
                 inout_preds = torch.stack(preds['inout']).squeeze(dim=1)
 
-                if mask.any():
-                    heatmap_loss = heatmap_loss_fn(heatmap_preds[mask], heatmaps_cuda[mask])
-                else:
-                    heatmap_loss = heatmap_preds.sum() * 0
-
             if args.use_amp:
-                heatmap_loss = heatmap_loss.float()
+                heatmap_inputs = heatmap_preds.float()
+                heatmap_targets = heatmaps_cuda.float()
+            else:
+                heatmap_inputs = heatmap_preds
+                heatmap_targets = heatmaps_cuda
+
+            if mask.any():
+                heatmap_loss = heatmap_loss_fn(heatmap_inputs[mask], heatmap_targets[mask])
+            else:
+                heatmap_loss = heatmap_inputs.sum() * 0
 
             target_inout = inout_cuda.float()
             if args.use_amp:
