@@ -298,7 +298,9 @@ uv run python scripts/train_vat.py \
 --log_iter 50 \
 --max_epochs 15 \
 --batch_size 64 \
---lr 1e-3 \
+--lr_non_inout 1e-5 \
+--lr_inout 1e-2 \
+--inout_loss_lambda 1.0 \
 --n_workers 50 \
 --use_amp \
 --finetune \
