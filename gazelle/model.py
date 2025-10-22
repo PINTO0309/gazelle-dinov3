@@ -54,7 +54,6 @@ class GazeLLE(nn.Module):
                 nn.Dropout(0.1),
                 nn.Linear(128, 1),
             )
-            self.inout_norm = nn.LayerNorm(self.dim)
 
     def forward(self, input):
         # input["images"]: [B, 3, H, W] tensor of images
@@ -79,7 +78,7 @@ class GazeLLE(nn.Module):
         inout_logits = None
         if self.inout:
             inout_tokens = x[:, 0, :]
-            logits = self.inout_head(self.inout_norm(inout_tokens)).squeeze(dim=-1)
+            logits = self.inout_head(inout_tokens).squeeze(dim=-1)
             inout_logits = utils.split_tensors(logits, num_ppl_per_img)
             inout_preds = [torch.sigmoid(chunk) for chunk in inout_logits]
             x = x[:, 1:, :] # slice off inout tokens from scene tokens
