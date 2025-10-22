@@ -536,8 +536,17 @@ def main():
                     heatmap_loss = heatmap_loss_fn(heatmap_preds[mask], heatmaps_cuda[mask])
                 else:
                     heatmap_loss = heatmap_preds.sum() * 0
-                inout_loss = inout_loss_fn(inout_preds, inout_cuda.float())
-                loss = heatmap_loss + args.inout_loss_lambda * inout_loss
+
+            if args.use_amp:
+                heatmap_loss = heatmap_loss.float()
+
+            target_inout = inout_cuda.float()
+            if args.use_amp:
+                with autocast('cuda', enabled=False):
+                    inout_loss = inout_loss_fn(inout_preds.float(), target_inout)
+            else:
+                inout_loss = inout_loss_fn(inout_preds, target_inout)
+            loss = heatmap_loss + args.inout_loss_lambda * inout_loss
 
             temperature = None
             distill_loss = None
