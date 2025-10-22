@@ -46,7 +46,7 @@ the teacher.
 """
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_name', type=str, default="gazelle_dinov3_vitb16_inout")
-parser.add_argument('--init_ckpt', type=str, default='./checkpoints/gazelle_dinov3_vitb16.pt', help='checkpoint for initialization (trained on GazeFollow)')
+parser.add_argument('--init_ckpt', type=str, default='./ckpts/gazelle_dinov3_vitb16.pt', help='checkpoint for initialization (trained on GazeFollow)')
 parser.add_argument('--data_path', type=str, default='./data/videoattentiontarget')
 parser.add_argument('--frame_sample_every', type=int, default=6)
 parser.add_argument('--ckpt_save_dir', type=str, default='./runs')
