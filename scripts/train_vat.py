@@ -78,6 +78,7 @@ parser.add_argument('--distill_weight', type=float, default=0.0, help='weight ap
 parser.add_argument('--distill_temp_start', type=float, default=1.0, help='initial temperature for distillation soft targets')
 parser.add_argument('--distill_temp_end', type=float, default=4.0, help='final temperature reached via cosine schedule')
 parser.add_argument('--distill_teacher_ckpt', type=str, default=None, help='path to checkpoint used to initialize the teacher model (defaults to matching ckpt in ./ckpts)')
+parser.add_argument('--reset_inout_head', action='store_true', help='reinitialize in/out head weights after loading init checkpoint')
 args = parser.parse_args()
 
 
@@ -108,6 +109,19 @@ def _restore_rng_state(state: Dict):
 def _prepare_model_state_dict(model: GazeLLE, include_backbone: bool = True):
     state = model.get_gazelle_state_dict(include_backbone=include_backbone)
     return {k: v.detach().cpu() for k, v in state.items()}
+
+
+def _reinit_inout_head(model: GazeLLE) -> bool:
+    if not getattr(model, "inout", False) or not hasattr(model, "inout_head"):
+        return False
+    reset = False
+    for module in model.inout_head:
+        if isinstance(module, nn.Linear):
+            nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+            reset = True
+    return reset
 
 
 def _move_optimizer_state_to_device(optimizer: torch.optim.Optimizer, device):
@@ -369,6 +383,9 @@ def main():
         print("Initializing from {}".format(args.init_ckpt))
         init_state = _load_init_checkpoint(args.init_ckpt)
         model.load_gazelle_state_dict(init_state, include_backbone=True)  # initializing from ckpt without inout head
+        if args.reset_inout_head:
+            if _reinit_inout_head(model):
+                print("Reinitialized in/out head weights")
     else:
         print(f"Resuming training from {args.resume} at epoch {start_epoch}")
     model.cuda()
