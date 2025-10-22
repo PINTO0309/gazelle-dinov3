@@ -6,6 +6,7 @@ data/videoattentiontarget/
 *.profile
 *.tar.gz
 *.whl
+*.mp4
 __pycache__/
 runs/
 AUC_*.txt

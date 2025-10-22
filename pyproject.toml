@@ -20,6 +20,7 @@ dependencies = [
     "onnxruntime-gpu==1.23.0",
     "onnxsim==0.4.30",
     "onnxslim==0.1.69",
+    "opencv-python==4.11.0.86",
     "pybind11==3.0.1",
     "pyyaml==6.0.3",
     "regex==2025.9.18",
