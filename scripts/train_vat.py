@@ -45,7 +45,7 @@ the type of teacher model, and DEFAULT_TEACHER_CKPTS is the default weights assi
 the teacher.
 """
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', type=str, default="gazelle_dinov3_vitb16_inout")
+parser.add_argument('--model_name', type=str, default="gazelle_dinov3_vitb16_inout")
 parser.add_argument('--init_ckpt', type=str, default='./checkpoints/gazelle_dinov3_vitb16.pt', help='checkpoint for initialization (trained on GazeFollow)')
 parser.add_argument('--data_path', type=str, default='./data/videoattentiontarget')
 parser.add_argument('--frame_sample_every', type=int, default=6)
@@ -299,7 +299,7 @@ def main():
     scaler = GradScaler('cuda', enabled=args.use_amp)
 
     model, transform = get_gazelle_model(
-        args.model,
+        args.model_name,
         finetune_backbone=args.finetune,
         apply_sigmoid=not args.disable_sigmoid,
     )
@@ -316,7 +316,7 @@ def main():
     if distill_enabled:
         if not args.distill_teacher:
             raise ValueError("distill_weight > 0 but no distill_teacher specified.")
-        if args.distill_teacher == args.model:
+        if args.distill_teacher == args.model_name:
             print("WARNING: distill_teacher matches student model; distillation likely ineffective but continuing.")
         teacher_model, _ = get_gazelle_model(
             args.distill_teacher,
