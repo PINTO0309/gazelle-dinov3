@@ -10,6 +10,8 @@
 
 A model for activating human gaze regions using heat maps. Built with DINOv3
 
+Real-time demo with RTX3070. The inference speed displayed in the upper left corner of the screen is the total processing time for object detection, gaze area estimation, and all pre-processing and post-processing.
+
 https://github.com/user-attachments/assets/bfc3f569-31c4-4bd0-b539-0fade9782c8f
 
 As I have mastered hell annotation for person detection, I can say with confidence that the minimum required resolution to properly classify the "eyes" and "ears" of the human body, which are important for estimating the direction of the head and gaze, is VGA or higher.
