@@ -10,6 +10,8 @@
 
 A model for activating human gaze regions using heat maps. Built with DINOv3
 
+https://github.com/user-attachments/assets/bfc3f569-31c4-4bd0-b539-0fade9782c8f
+
 As I have mastered hell annotation for person detection, I can say with confidence that the minimum required resolution to properly classify the "eyes" and "ears" of the human body, which are important for estimating the direction of the head and gaze, is VGA or higher.
 
 I manually annotated numerous human body parts, including those as small as 3 pixels or less, and benchmarked the performance with the DINOv3-based object detection model DEIMv2. The results clearly show that input resolutions below VGA lack sufficient context. The total number of body parts I have carefully hand-labeled is `1,034,735`.
