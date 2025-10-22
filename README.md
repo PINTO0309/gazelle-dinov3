@@ -130,7 +130,7 @@ uv run python scripts/train_gazefollow.py \
 --model_name gazelle_dinov3_vit_tinyplus \
 --exp_name gazelle_dinov3_m_ft_bcelogits_prog_distill \
 --log_iter 50 \
---max_epochs 35 \
+--max_epochs 40 \
 --batch_size 64 \
 --lr 1e-3 \
 --n_workers 50 \
