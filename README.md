@@ -314,17 +314,14 @@ uv run python scripts/train_vat.py \
 --log_iter 50 \
 --max_epochs 15 \
 --batch_size 64 \
+--n_workers 50 \
 --lr_non_inout 1e-5 \
 --lr_inout 1e-2 \
 --inout_loss_lambda 1.0 \
---n_workers 50 \
 --use_amp \
---finetune \
---finetune_layers 2 \
 --grad_clip_norm 1.0 \
 --disable_sigmoid \
---initial_freeze_epochs 1 \
---unfreeze_interval 1
+--disable_progressive_unfreeze
 ```
 
 </details>
