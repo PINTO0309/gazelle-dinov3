@@ -4,6 +4,7 @@ import os
 import torch
 from gazelle.model import get_gazelle_model
 import onnx
+from onnxslim import slim
 from onnxsim import simplify
 
 """
@@ -30,16 +31,16 @@ from onnxsim import simplify
 
 models = {
     # DINOv2
-    # "gazelle_dinov2_vitb14": ["gazelle_dinov2_vitb14.pt", False],
-    # "gazelle_dinov2_vitl14": ["gazelle_dinov2_vitl14.pt", False],
-    # "gazelle_dinov2_vitb14_inout": ["gazelle_dinov2_vitb14_inout.pt", True],
-    # "gazelle_dinov2_vitl14_inout": ["gazelle_dinov2_vitl14_inout.pt", True],
+    # "gazelle_dinov2_vitb14": ["ckpts/gazelle_dinov2_vitb14.pt", False],
+    # "gazelle_dinov2_vitl14": ["ckpts/gazelle_dinov2_vitl14.pt", False],
+    # "gazelle_dinov2_vitb14_inout": ["ckpts/gazelle_dinov2_vitb14_inout.pt", True],
+    # "gazelle_dinov2_vitl14_inout": ["ckpts/gazelle_dinov2_vitl14_inout.pt", True],
     # DINOv3
-    "gazelle_dinov3_vit_tiny": ["gazelle_dinov3_vit_tiny.pt", False, 640, 640],
-    # "gazelle_dinov3_vit_tinyplus": ["gazelle_dinov3_vit_tinyplus.pt", False, 640, 640],
-    # "gazelle_dinov3_vits16": ["gazelle_dinov3_vits16.pt", False, 640, 640],
-    # "gazelle_dinov3_vits16plus": ["gazelle_dinov3_vits16plus.pt", False, 640, 640],
-    # "gazelle_dinov3_vitb16": ["gazelle_dinov3_vitb16.pt", False, 640, 640],
+    "gazelle_dinov3_vit_tiny": ["ckpts/gazelle_dinov3_vit_tiny.pt", False, 640, 640],
+    "gazelle_dinov3_vit_tinyplus": ["ckpts/gazelle_dinov3_vit_tinyplus.pt", False, 640, 640],
+    "gazelle_dinov3_vits16": ["ckpts/gazelle_dinov3_vits16.pt", False, 640, 640],
+    "gazelle_dinov3_vits16plus": ["ckpts/gazelle_dinov3_vits16plus.pt", False, 640, 640],
+    "gazelle_dinov3_vitb16": ["ckpts/gazelle_dinov3_vitb16.pt", False, 640, 640],
 }
 
 for m, params in models.items():
@@ -95,7 +96,9 @@ for m, params in models.items():
     model_onnx1 = onnx.load(onnx_file)
     model_onnx1 = onnx.shape_inference.infer_shapes(model_onnx1)
     onnx.save(model_onnx1, onnx_file)
+
     model_onnx2 = onnx.load(onnx_file)
+    model_onnx2 = slim(model_onnx2)
     model_simp, check = simplify(model_onnx2)
     onnx.save(model_simp, onnx_file)
     model_onnx2 = onnx.load(onnx_file)
@@ -125,6 +128,7 @@ for m, params in models.items():
     model_onnx1 = onnx.shape_inference.infer_shapes(model_onnx1)
     onnx.save(model_onnx1, onnx_file)
     model_onnx2 = onnx.load(onnx_file)
+    model_onnx2 = slim(model_onnx2)
     model_simp, check = simplify(model_onnx2)
     onnx.save(model_simp, onnx_file)
     model_onnx2 = onnx.load(onnx_file)

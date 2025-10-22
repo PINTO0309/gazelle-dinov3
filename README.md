@@ -1,6 +1,7 @@
 # gazelle-dinov3
 
-[![DOI](https://zenodo.org/badge/1078614133.svg)](https://doi.org/10.5281/zenodo.17413165)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17413165.svg)](https://doi.org/10.5281/zenodo.17413165) ![GitHub License](https://img.shields.io/github/license/pinto0309/gazelle-dinov3)
+
 
 > [!Note]
 > **October 22, 2025 :** A checkpoint file `.pt` containing GazeFollow's trained weights and statistical information has been released.
@@ -9,6 +10,8 @@
 
 A model for activating human gaze regions using heat maps. Built with DINOv3
 
+https://github.com/user-attachments/assets/bfc3f569-31c4-4bd0-b539-0fade9782c8f
+
 As I have mastered hell annotation for person detection, I can say with confidence that the minimum required resolution to properly classify the "eyes" and "ears" of the human body, which are important for estimating the direction of the head and gaze, is VGA or higher.
 
 I manually annotated numerous human body parts, including those as small as 3 pixels or less, and benchmarked the performance with the DINOv3-based object detection model DEIMv2. The results clearly show that input resolutions below VGA lack sufficient context. The total number of body parts I have carefully hand-labeled is `1,034,735`.
@@ -16,7 +19,6 @@ I manually annotated numerous human body parts, including those as small as 3 pi
 https://github.com/PINTO0309/PINTO_model_zoo/tree/main/472_DEIMv2-Wholebody34
 
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/00fbfa14-b0b7-442d-8ccb-9152a7a8245e" />
-
 
 ## Installation
 ```bash
@@ -339,15 +341,28 @@ High accuracy is not important to me at all. I'm only interested in whether the 
 
 - GazeFollow
 
-  |Variant|Param<br>(Backbone+Head)|AUC ⬆️|Min L2 ⬇️|Avg L2 ⬇️|Weight|
-  |:-:|:-:|-:|-:|-:|:-:|
-  |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.80 M|0.9560|0.0450|0.1040|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14.pt)|
-  |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.90 M|0.9580|0.0410|0.0990|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14.pt)|
-  |S-distillation|8.17 M|0.9545|0.0484|0.1118|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tiny.pt)|
-  |M-distillation|12.37 M|0.9564|0.0462|0.1042|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tinyplus.pt)|
-  |L-distillation|24.33 M|0.9593|0.0418|0.0992|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16.pt)|
-  |X-distillation|**31.43 M**|**0.9604**|**0.0395**|**0.0966**|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16plus.pt)|
-  |XL (Teacher)|88.50 M|0.9593|0.0405|0.0973|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16.pt)|
+  |Variant|Param<br>(Backbone+Head)|AUC ⬆️|Min L2 ⬇️|Avg L2 ⬇️|Weight|ONNX|
+  |:-:|:-:|-:|-:|-:|:-:|:-:|
+  |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.80 M|0.9560|0.0450|0.1040|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14.pt)|---|
+  |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.90 M|0.9580|0.0410|0.0990|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14.pt)|---|
+  |S-distillation|8.17 M|0.9545|0.0484|0.1118|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tiny.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tiny_1x3x640x640_1xNx4.onnx)|
+  |M-distillation|12.37 M|0.9564|0.0462|0.1042|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tinyplus.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tinyplus_1x3x640x640_1xNx4.onnx)|
+  |L-distillation|24.33 M|0.9593|0.0418|0.0992|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16_1x3x640x640_1xNx4.onnx)|
+  |X-distillation|**31.43 M**|**0.9604**|**0.0395**|**0.0966**|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16plus.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16plus_1x3x640x640_1xNx4.onnx)|
+  |XL (Teacher)|88.50 M|0.9593|0.0405|0.0973|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16_1x3x640x640_1xNx4.onnx)|
+
+  RTX3070 + TensorRT inference speed benchmark. Average of 1000 inferences. Below is the inference speed of the entire model integrating backbone and head.
+
+  <img width="700" alt="benchmark_times_combined" src="https://github.com/user-attachments/assets/741d0ae4-ba21-4e59-a755-8ae8d97124dc" />
+
+  |S|M|
+  |:-:|:-:|
+  |<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vit_tiny_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/ec1fcbf9-70d8-4b6c-aa8a-d2efbd6079ae" />|<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vit_tinyplus_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/14ba0f97-247a-4d48-90cf-cff91c1b9b20" />|
+  
+  |L|X|
+  |:-:|:-:|
+  |<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vits16_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/c51e3c81-65ba-4216-8907-087d505eeaea" />|<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vits16plus_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/e59b053f-10e8-4b59-abe7-76b8858fc14f" />|
+
 
 - VideoAttentionTarget
 
