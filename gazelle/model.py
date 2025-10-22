@@ -48,12 +48,11 @@ class GazeLLE(nn.Module):
             nn.Conv2d(dim, 1, kernel_size=1, bias=False),
         )
         if self.inout:
+            # A single linear layer works better in practice – the previous MLP
+            # tended to collapse to a constant output (matching the dataset prior)
+            # even though the transformer token carries useful information.
             self.inout_head = nn.Sequential(
-                nn.Linear(self.dim, 128),
-                nn.GELU(),
-                nn.Dropout(0.1),
-                nn.Linear(128, 1),
-                nn.Sigmoid()
+                nn.Linear(self.dim, 1),
             )
 
     def forward(self, input):
@@ -76,11 +75,12 @@ class GazeLLE(nn.Module):
         x: torch.Tensor = self.transformer(x)
 
         inout_preds = None
+        inout_logits = None
         if self.inout:
             inout_tokens = x[:, 0, :]
-            inout_preds = self.inout_head(inout_tokens)
-            inout_preds = inout_preds.squeeze(dim=-1)
-            inout_preds = utils.split_tensors(inout_preds, num_ppl_per_img)
+            logits = self.inout_head(inout_tokens).squeeze(dim=-1)
+            inout_logits = utils.split_tensors(logits, num_ppl_per_img)
+            inout_preds = [torch.sigmoid(chunk) for chunk in inout_logits]
             x = x[:, 1:, :] # slice off inout tokens from scene tokens
 
         x = x.reshape(x.shape[0], self.featmap_h, self.featmap_w, x.shape[2]).permute(0, 3, 1, 2) # b (h w) c -> b c h w
@@ -91,7 +91,10 @@ class GazeLLE(nn.Module):
         x = F.resize(x, self.out_size, antialias=False)
         heatmap_preds = utils.split_tensors(x, num_ppl_per_img) # resplit per image
 
-        return {"heatmap": heatmap_preds, "inout": inout_preds if self.inout else None}
+        outputs = {"heatmap": heatmap_preds, "inout": inout_preds if self.inout else None}
+        if self.inout:
+            outputs["inout_logits"] = inout_logits
+        return outputs
 
     def get_input_head_maps(self, bboxes):
         # bboxes: [[(xmin, ymin, xmax, ymax)]] - list of list of head bboxes per image
@@ -138,7 +141,13 @@ class GazeLLE(nn.Module):
             print("WARNING provided state dict does not have values for keys: ", keys1 - keys2)
 
         for k in list(keys1 & keys2):
-            current_state_dict[k] = ckpt_state_dict[k]
+            v_src = ckpt_state_dict[k]
+            v_dst = current_state_dict[k]
+            if isinstance(v_src, torch.Tensor) and isinstance(v_dst, torch.Tensor):
+                if v_src.shape != v_dst.shape:
+                    print(f"WARNING: skipping key '{k}' due to shape mismatch ({tuple(v_src.shape)} != {tuple(v_dst.shape)})")
+                    continue
+            current_state_dict[k] = v_src
 
         self.load_state_dict(current_state_dict, strict=False)
 
@@ -182,11 +191,8 @@ class GazeLLE_ONNX(nn.Module):
         self.head_token = nn.Embedding(1, self.dim)
         if self.inout:
             self.inout_head = nn.Sequential(
-                nn.Linear(self.dim, 128),
-                nn.GELU(),
-                nn.Dropout(0.1),
-                nn.Linear(128, 1),
-                nn.Sigmoid()
+                nn.Linear(self.dim, 1),
+                nn.Sigmoid(),
             )
             self.inout_token = nn.Embedding(1, self.dim)
 

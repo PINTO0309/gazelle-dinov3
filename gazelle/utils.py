@@ -149,7 +149,12 @@ def gazefollow_auc(heatmap, gt_gazex, gt_gazey, height, width):
             x = min(x, width - 1)
             y = min(y, height - 1)
             target_map[y, x] = 1
-    resized_heatmap = torch.nn.functional.interpolate(heatmap.unsqueeze(dim=0).unsqueeze(dim=0), (height, width), mode='bilinear').squeeze()
+    heatmap = torch.nan_to_num(heatmap, nan=0.0, posinf=1.0, neginf=0.0)
+    resized_heatmap = torch.nn.functional.interpolate(
+        heatmap.unsqueeze(dim=0).unsqueeze(dim=0),
+        (height, width),
+        mode='bilinear'
+    ).squeeze()
     auc = roc_auc_score(target_map.flatten(), resized_heatmap.cpu().flatten())
 
     return auc
@@ -178,6 +183,7 @@ def vat_auc(heatmap, gt_gazex, gt_gazey):
     res = 64
     sigma = 3
     assert heatmap.shape[0] == res and heatmap.shape[1] == res
+    heatmap = torch.nan_to_num(heatmap, nan=0.0, posinf=1.0, neginf=0.0)
     target_map = np.zeros((res, res))
     gazex = gt_gazex * res
     gazey = gt_gazey * res
@@ -189,6 +195,7 @@ def vat_auc(heatmap, gt_gazex, gt_gazey):
 
 # Reference: https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/eval_on_videoatttarget.py#L118
 def vat_l2(heatmap, gt_gazex, gt_gazey):
+    heatmap = torch.nan_to_num(heatmap, nan=0.0, posinf=1.0, neginf=0.0)
     argmax = heatmap.flatten().argmax().item()
     pred_y, pred_x = np.unravel_index(argmax, (64, 64))
     pred_x = pred_x / 64.
