@@ -18,7 +18,6 @@ https://github.com/PINTO0309/PINTO_model_zoo/tree/main/472_DEIMv2-Wholebody34
 
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/00fbfa14-b0b7-442d-8ccb-9152a7a8245e" />
 
-
 ## Installation
 ```bash
 git clone https://github.com/PINTO0309/gazelle-dinov3.git && cd gazelle-dinov3
@@ -353,6 +352,15 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   RTX3070 inference speed benchmark. Average of 1000 inferences.
 
   <img width="700" alt="benchmark_times_combined" src="https://github.com/user-attachments/assets/741d0ae4-ba21-4e59-a755-8ae8d97124dc" />
+
+  |S|M|
+  |:-:|:-:|
+  |<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vit_tiny_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/ec1fcbf9-70d8-4b6c-aa8a-d2efbd6079ae" />|<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vit_tinyplus_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/14ba0f97-247a-4d48-90cf-cff91c1b9b20" />|
+  
+  |L|X|
+  |:-:|:-:|
+  |<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vits16_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/c51e3c81-65ba-4216-8907-087d505eeaea" />|<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vits16plus_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/e59b053f-10e8-4b59-abe7-76b8858fc14f" />|
+
 
 - VideoAttentionTarget
 
