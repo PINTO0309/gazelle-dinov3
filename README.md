@@ -286,6 +286,15 @@ uv run python scripts/train_gazefollow.py \
 ```
 
 ### VideoAttentionTarget
+- `--init_ckpt` loads the student model’s starting weights before VAT training.
+This is always executed even if distillation is not used,
+and the backbone + head (In/Out heads can be untrained) pre-trained with
+GazeFollow is transplanted into the student model to improve initial performance.
+
+- `--distill_teacher` is an argument that specifies the architecture name of
+the teacher model to use during distillation. This is only read when distill_weight
+is set to a positive value, and a teacher network is constructed with a separate
+get_gazelle_model call.
 
 ```
 ############################################# XL
@@ -294,6 +303,7 @@ uv run python scripts/train_vat.py \
 --data_path data/videoattentiontarget \
 --model_name gazelle_dinov3_vitb16_inout \
 --exp_name gazelle_dinov3_xl_inout \
+--init_ckpt ckpts/gazelle_dinov3_vitb16.pt \
 --frame_sample_every 6 \
 --log_iter 50 \
 --max_epochs 15 \
