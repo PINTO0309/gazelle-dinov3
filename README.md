@@ -349,7 +349,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |X-distillation|**31.43 M**|**0.9604**|**0.0395**|**0.0966**|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16plus.pt)|
   |XL (Teacher)|88.50 M|0.9593|0.0405|0.0973|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16.pt)|
 
-  RTX3070 inference speed benchmark. Average of 1000 inferences.
+  RTX3070 + TensorRT inference speed benchmark. Average of 1000 inferences.
 
   <img width="700" alt="benchmark_times_combined" src="https://github.com/user-attachments/assets/741d0ae4-ba21-4e59-a755-8ae8d97124dc" />
 
