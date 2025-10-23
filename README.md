@@ -415,6 +415,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |M|12.37 M||||Download|Download|
   |L|24.33 M||||Download|Download|
   |X|31.43 M|0.9346|0.1053|0.9135|Download|Download|
+  |X-distillation|31.43 M|0.9366|0.1050|0.9118|Download|Download|
   |XL|88.50 M|0.9399|0.0943|0.9051|Download|Download|
 
 ## Citation
