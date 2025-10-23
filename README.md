@@ -521,6 +521,17 @@ If you find this project useful, please consider citing:
     booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}
   }
   ```
+- https://github.com/Peterande/D-FINE
+  ```bibtex
+  @misc{peng2024dfine,
+        title={D-FINE: Redefine Regression Task in DETRs as Fine-grained Distribution Refinement},
+        author={Yansong Peng and Hebei Li and Peixi Wu and Yueyi Zhang and Xiaoyan Sun and Feng Wu},
+        year={2024},
+        eprint={2410.13842},
+        archivePrefix={arXiv},
+        primaryClass={cs.CV}
+  }
+  ```
 - https://github.com/Intellindust-AI-Lab/DEIMv2
   ```bibtex
   @article{huang2025deimv2,
