@@ -4,6 +4,8 @@
 
 
 > [!Note]
+> **October 23, 2025 :** A checkpoint file `.pt` containing VideoAttentionTarget's trained weights and statistical information has been released.
+> 
 > **October 22, 2025 :** A checkpoint file `.pt` containing GazeFollow's trained weights and statistical information has been released.
 > 
 > **October 19, 2025 :** I am continuing to experiment to achieve better accuracy, so this repository is still a work in progress.
