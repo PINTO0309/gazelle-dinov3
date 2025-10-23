@@ -325,8 +325,30 @@ uv run python scripts/train_vat.py \
 --disable_sigmoid \
 --disable_progressive_unfreeze
 
+### distill GH200
+uv run python scripts/train_vat.py \
+--data_path data/videoattentiontarget \
+--model_name gazelle_dinov3_vits16plus_inout \
+--exp_name gazelle_dinov3_x_inout \
+--init_ckpt ckpts/gazelle_dinov3_vits16plus.pt \
+--frame_sample_every 6 \
+--log_iter 50 \
+--max_epochs 20 \
+--batch_size 64 \
+--n_workers 50 \
+--lr_non_inout 1e-5 \
+--lr_inout 1e-2 \
+--inout_loss_lambda 1.0 \
+--use_amp \
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--disable_progressive_unfreeze \
+--distill_teacher gazelle_dinov3_vitb16_inout \
+--distill_weight 0.3 \
+--distill_temp_end 4.0
+
 ############################################# XL
-### GH200
+### no-distill GH200
 uv run python scripts/train_vat.py \
 --data_path data/videoattentiontarget \
 --model_name gazelle_dinov3_vitb16_inout \
@@ -392,7 +414,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |S|8.17 M||||Download|Download|
   |M|12.37 M||||Download|Download|
   |L|24.33 M||||Download|Download|
-  |X|31.43 M||||Download|Download|
+  |X|31.43 M|0.9346|0.1053|0.9135|Download|Download|
   |XL|88.50 M|0.9399|0.0943|0.9051|Download|Download|
 
 ## Citation
