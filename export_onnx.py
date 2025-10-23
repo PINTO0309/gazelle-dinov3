@@ -35,12 +35,19 @@ models = {
     # "gazelle_dinov2_vitl14": ["ckpts/gazelle_dinov2_vitl14.pt", False],
     # "gazelle_dinov2_vitb14_inout": ["ckpts/gazelle_dinov2_vitb14_inout.pt", True],
     # "gazelle_dinov2_vitl14_inout": ["ckpts/gazelle_dinov2_vitl14_inout.pt", True],
+
     # DINOv3
     "gazelle_dinov3_vit_tiny": ["ckpts/gazelle_dinov3_vit_tiny.pt", False, 640, 640],
     "gazelle_dinov3_vit_tinyplus": ["ckpts/gazelle_dinov3_vit_tinyplus.pt", False, 640, 640],
     "gazelle_dinov3_vits16": ["ckpts/gazelle_dinov3_vits16.pt", False, 640, 640],
     "gazelle_dinov3_vits16plus": ["ckpts/gazelle_dinov3_vits16plus.pt", False, 640, 640],
     "gazelle_dinov3_vitb16": ["ckpts/gazelle_dinov3_vitb16.pt", False, 640, 640],
+
+    "gazelle_dinov3_vit_tiny_inout": ["ckpts/gazelle_dinov3_vit_tiny_inout.pt", True, 640, 640],
+    "gazelle_dinov3_vit_tinyplus_inout": ["ckpts/gazelle_dinov3_vit_tinyplus_inout.pt", True, 640, 640],
+    "gazelle_dinov3_vits16_inout": ["ckpts/gazelle_dinov3_vits16_inout.pt", True, 640, 640],
+    "gazelle_dinov3_vits16plus_inout": ["ckpts/gazelle_dinov3_vits16plus_inout.pt", True, 640, 640],
+    "gazelle_dinov3_vitb16_inout": ["ckpts/gazelle_dinov3_vitb16_inout.pt", True, 640, 640],
 }
 
 for m, params in models.items():
