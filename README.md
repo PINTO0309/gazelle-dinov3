@@ -318,7 +318,7 @@ uv run python scripts/train_vat.py \
 --init_ckpt ckpts/gazelle_dinov3_vit_tiny.pt \
 --frame_sample_every 6 \
 --log_iter 50 \
---max_epochs 20 \
+--max_epochs 40 \
 --batch_size 64 \
 --n_workers 50 \
 --lr_non_inout 1e-5 \
