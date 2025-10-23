@@ -22,6 +22,8 @@ https://github.com/PINTO0309/PINTO_model_zoo/tree/main/472_DEIMv2-Wholebody34
 
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/00fbfa14-b0b7-442d-8ccb-9152a7a8245e" />
 
+Therefore, the resolutions of `224x224` and `448x448` proposed in previous papers are far too small to obtain sufficient context from the vision.
+
 ## Installation
 ```bash
 git clone https://github.com/PINTO0309/gazelle-dinov3.git && cd gazelle-dinov3
