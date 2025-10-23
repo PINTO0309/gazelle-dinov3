@@ -329,7 +329,7 @@ uv run python scripts/train_vat.py \
 uv run python scripts/train_vat.py \
 --data_path data/videoattentiontarget \
 --model_name gazelle_dinov3_vits16plus_inout \
---exp_name gazelle_dinov3_x_inout \
+--exp_name gazelle_dinov3_x_inout_distill \
 --init_ckpt ckpts/gazelle_dinov3_vits16plus.pt \
 --frame_sample_every 6 \
 --log_iter 50 \
