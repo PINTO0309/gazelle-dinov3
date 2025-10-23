@@ -307,8 +307,8 @@ get_gazelle_model call.
 ```
 ############################################# M
 ### distillation - GH200
-uv run python scripts/train_gazefollow.py \
---data_path data/gazefollow_extended \
+uv run python scripts/train_vat.py \
+--data_path data/videoattentiontarget \
 --model_name gazelle_dinov3_vit_tinyplus \
 --exp_name gazelle_dinov3_m_inout_distill \
 --log_iter 50 \
