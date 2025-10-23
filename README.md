@@ -385,7 +385,15 @@ High accuracy is not important to me at all. I'm only interested in whether the 
 
 - VideoAttentionTarget
 
-  WIP
+  |Variant|Param<br>(Backbone+Head)|AUC ⬆️|Min L2 ⬇️|AP IN/OUT ⬆️|Weight|ONNX|
+  |:-:|:-:|-:|-:|-:|:-:|:-:|
+  |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.80 M|0.9330|0.1070|0.8970|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14_inout.pt)|---|
+  |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.90 M|0.9370|0.1030|0.9030|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14_inout.pt)|---|
+  |S|8.17 M||||Download|Download|
+  |M|12.37 M||||Download|Download|
+  |L|24.33 M||||Download|Download|
+  |X|31.43 M||||Download|Download|
+  |XL|88.50 M|0.9399|0.0943|0.9051|Download|Download|
 
 ## Citation
 If you find this project useful, please consider citing:
