@@ -8,7 +8,7 @@
 > 
 > **October 19, 2025 :** I am continuing to experiment to achieve better accuracy, so this repository is still a work in progress.
 
-A model for activating human gaze regions using heat maps. Built with DINOv3
+A model for activating human gaze regions using heat maps. Built with DINOv3.
 
 Real-time demo with RTX3070. The inference speed displayed in the upper left corner of the screen is the total processing time for object detection, gaze area estimation, and all pre-processing and post-processing.
 
@@ -424,4 +424,5 @@ If you find this project useful, please consider citing:
     year = {2020}
   }
   ```
+- https://github.com/PINTO0309/PINTO_model_zoo/tree/main/472_DEIMv2-Wholebody34
 - https://github.com/PINTO0309/PINTO_model_zoo/tree/main/462_Gaze-LLE
