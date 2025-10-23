@@ -438,8 +438,8 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |S|8.17 M||||Download|Download|
   |M|12.37 M||||Download|Download|
   |L|24.33 M||||Download|Download|
-  |X-distillation|31.43 M|0.9366|0.1050|0.9118|Download|Download|
-  |XL|88.50 M|0.9399|0.0943|0.9051|Download|Download|
+  |X-distillation|31.43 M|0.9366|0.1050|**0.9118**|Download|Download|
+  |XL|**88.50 M**|**0.9399**|**0.0943**|0.9051|Download|Download|
 
 ## Citation
 If you find this project useful, please consider citing:
