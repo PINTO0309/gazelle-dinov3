@@ -435,9 +435,9 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |:-:|:-:|-:|-:|-:|:-:|:-:|
   |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.80 M|0.9330|0.1070|0.8970|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14_inout.pt)|---|
   |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.90 M|0.9370|0.1030|0.9030|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14_inout.pt)|---|
-  |S|8.17 M||||Download|Download|
-  |M|12.37 M||||Download|Download|
-  |L|24.33 M||||Download|Download|
+  |S-distillation|8.17 M||||Download|Download|
+  |M-distillation|12.37 M||||Download|Download|
+  |L-distillation|24.33 M|0.9347|0.1026|0.9011|Download|Download|
   |X-distillation|31.43 M|0.9366|0.1050|**0.9118**|Download|Download|
   |XL (Teacher)|**88.50 M**|**0.9399**|**0.0943**|0.9051|Download|Download|
 
