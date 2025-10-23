@@ -305,6 +305,26 @@ is set to a positive value, and a teacher network is constructed with a separate
 get_gazelle_model call.
 
 ```
+############################################# X
+### no-distill GH200
+uv run python scripts/train_vat.py \
+--data_path data/videoattentiontarget \
+--model_name gazelle_dinov3_vits16plus_inout \
+--exp_name gazelle_dinov3_x_inout \
+--init_ckpt ckpts/gazelle_dinov3_vits16plus.pt \
+--frame_sample_every 6 \
+--log_iter 50 \
+--max_epochs 20 \
+--batch_size 64 \
+--n_workers 50 \
+--lr_non_inout 1e-5 \
+--lr_inout 1e-2 \
+--inout_loss_lambda 1.0 \
+--use_amp \
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--disable_progressive_unfreeze
+
 ############################################# XL
 ### GH200
 uv run python scripts/train_vat.py \
