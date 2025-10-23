@@ -424,4 +424,5 @@ If you find this project useful, please consider citing:
     year = {2020}
   }
   ```
+- https://github.com/PINTO0309/PINTO_model_zoo/tree/main/472_DEIMv2-Wholebody34
 - https://github.com/PINTO0309/PINTO_model_zoo/tree/main/462_Gaze-LLE
