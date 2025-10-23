@@ -26,6 +26,8 @@ https://github.com/PINTO0309/PINTO_model_zoo/tree/main/472_DEIMv2-Wholebody34
 
 Therefore, the resolutions of `224x224` and `448x448` proposed in previous papers are far too small to obtain sufficient context from the vision. When designing this model, I changed the input resolution to `640x640`. Also, unlike previous papers, I use a pipeline that [progressive_unfreezing](./README_progressive_unfreezing.md) the backbone and fine-tunes all layers. This is important in terms of preventing catastrophic forgetting without self-distillation, preventing gradient collapse, and fine-tuning optimal weights for the task. Note that because `GazeFollow` and `VideoAttentionTarget` have too large class imbalances, I use `BCEWithLogitsLoss` instead of the loss function defined by `BCELoss + Sigmoid`.
 
+The full learning pipeline can be seen [here](./README_architecture.md).
+
 I'm not a researcher but a hobbyist programmer, so I don't write papers.
 
 ## Installation
