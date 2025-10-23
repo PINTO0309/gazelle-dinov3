@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import os
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
@@ -478,13 +479,50 @@ class DinoV3Backbone(Backbone):
 
         print(f'model_name: {model_name}')
         if 'vits' in model_name or 'vitb' in model_name:
-            self.dinov3 = torch.hub.load(
-                repo_or_dir='facebookresearch/dinov3:7bf81b2a0eb0e330dbc84a5d3d31d86ed3cdbd84',
-                model=model_name,
-                source='github',
-                weights=weights_path,
-                trust_repo=True,
-            )
+            repo = os.environ.get('DINOV3_HUB_REPO', 'facebookresearch/dinov3')
+            pinned_ref = os.environ.get('DINOV3_HUB_REF', '7bf81b2a0eb0e330dbc84a5d3d31d86ed3cdbd84')
+            fallback_ref = os.environ.get('DINOV3_HUB_FALLBACK_REF', 'main')
+
+            def _format_repo(r, ref):
+                return f'{r}:{ref}' if ref else r
+
+            repo_spec = _format_repo(repo, pinned_ref)
+            fallback_spec = _format_repo(repo, fallback_ref)
+
+            def _load(repo_or_dir):
+                return torch.hub.load(
+                    repo_or_dir=repo_or_dir,
+                    model=model_name,
+                    source='github',
+                    weights=weights_path,
+                    trust_repo=True,
+                )
+
+            try:
+                self.dinov3 = _load(repo_spec)
+            except Exception as error:
+                missing_commit = (
+                    pinned_ref
+                    and isinstance(error, ValueError)
+                    and 'Cannot find' in str(error)
+                    and repo in str(error)
+                )
+                can_fallback = missing_commit and fallback_spec and fallback_spec != repo_spec
+                if can_fallback:
+                    warnings.warn(
+                        (
+                            f"Falling back to '{fallback_spec}' because "
+                            f"DINOv3 commit '{pinned_ref}' is not available upstream. "
+                            "Set DINOV3_HUB_REF to override."
+                        ),
+                        RuntimeWarning,
+                    )
+                    try:
+                        self.dinov3 = _load(fallback_spec)
+                    except Exception:
+                        raise error
+                else:
+                    raise
             while len(self.dinov3.blocks) != (interaction_indexes[-1] + 1):
                 del self.dinov3.blocks[-1]
             del self.dinov3.head
