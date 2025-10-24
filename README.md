@@ -82,9 +82,9 @@ uv run python scripts/train_gazefollow.py \
 --exp_name gazelle_hgnetv2_atto_distill \
 --log_iter 50 \
 --max_epochs 60 \
---batch_size 64 \
+--batch_size 128 \
 --lr 1e-3 \
---n_workers 50 \
+--n_workers 60 \
 --use_amp \
 --finetune \
 --finetune_layers 2 \
@@ -92,7 +92,7 @@ uv run python scripts/train_gazefollow.py \
 --disable_sigmoid \
 --initial_freeze_epochs 10 \
 --unfreeze_interval 2 \
---distill_teacher gazelle_dinov3_vitb16 \
+--distill_teacher gazelle_dinov3_vits16plus \
 --distill_weight 0.3 \
 --distill_temp_end 4.0
 
@@ -104,9 +104,9 @@ uv run python scripts/train_gazefollow.py \
 --exp_name gazelle_hgnetv2_femto_distill \
 --log_iter 50 \
 --max_epochs 55 \
---batch_size 64 \
+--batch_size 128 \
 --lr 1e-3 \
---n_workers 50 \
+--n_workers 60 \
 --use_amp \
 --finetune \
 --finetune_layers 2 \
@@ -114,7 +114,7 @@ uv run python scripts/train_gazefollow.py \
 --disable_sigmoid \
 --initial_freeze_epochs 10 \
 --unfreeze_interval 2 \
---distill_teacher gazelle_dinov3_vitb16 \
+--distill_teacher gazelle_dinov3_vits16plus \
 --distill_weight 0.3 \
 --distill_temp_end 4.0
 
@@ -126,9 +126,9 @@ uv run python scripts/train_gazefollow.py \
 --exp_name gazelle_hgnetv2_n_distill \
 --log_iter 50 \
 --max_epochs 50 \
---batch_size 64 \
+--batch_size 128 \
 --lr 1e-3 \
---n_workers 50 \
+--n_workers 60 \
 --use_amp \
 --finetune \
 --finetune_layers 2 \
@@ -136,7 +136,7 @@ uv run python scripts/train_gazefollow.py \
 --disable_sigmoid \
 --initial_freeze_epochs 10 \
 --unfreeze_interval 2 \
---distill_teacher gazelle_dinov3_vitb16 \
+--distill_teacher gazelle_dinov3_vits16plus \
 --distill_weight 0.3 \
 --distill_temp_end 4.0
 
