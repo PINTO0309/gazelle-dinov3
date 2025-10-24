@@ -8,6 +8,7 @@ import gazelle.utils as utils
 from gazelle.backbone import DinoV2Backbone, DinoV3Backbone, HGNetv2Backbone
 import torchvision.transforms.functional as F
 from typing import List, Dict, Any
+from _collections_abc import dict_keys
 
 class GazeLLE(nn.Module):
     def __init__(
@@ -125,8 +126,8 @@ class GazeLLE(nn.Module):
 
     def load_gazelle_state_dict(self, ckpt_state_dict: Dict, include_backbone=False):
         current_state_dict = self.state_dict()
-        keys1 = current_state_dict.keys()
-        keys2 = ckpt_state_dict.keys()
+        keys1: dict_keys[str, Any] = current_state_dict.keys()
+        keys2: dict_keys[str, Any] = ckpt_state_dict.keys()
 
         if not include_backbone:
             keys1 = set([k for k in keys1 if not k.startswith("backbone")])
@@ -155,7 +156,7 @@ class GazeLLE(nn.Module):
 class GazeLLE_ONNX(nn.Module):
     def __init__(
         self,
-        backbone: DinoV2Backbone | DinoV3Backbone,
+        backbone: DinoV2Backbone | DinoV3Backbone | HGNetv2Backbone,
         inout=False,
         dim=256,
         num_layers=3,
@@ -203,7 +204,8 @@ class GazeLLE_ONNX(nn.Module):
         image_rgb = torch.cat([image_bgr[:, 2:3, ...], image_bgr[:, 1:2, ...], image_bgr[:, 0:1, ...]], dim=1)
         image_rgb = F.resize(img=image_rgb, size=(640, 640), antialias=False)
         image_rgb = image_rgb * 0.003921569
-        image_rgb = (image_rgb - mean) / std
+        if isinstance(self.backbone, DinoV2Backbone) or isinstance(self.backbone, DinoV3Backbone):
+            image_rgb = (image_rgb - mean) / std
 
         num_ppl_per_img = bboxes.shape[1]
 
@@ -277,8 +279,8 @@ class GazeLLE_ONNX(nn.Module):
 
     def load_gazelle_state_dict(self, ckpt_state_dict: Dict, include_backbone=False):
         current_state_dict = self.state_dict()
-        keys1 = current_state_dict.keys()
-        keys2 = ckpt_state_dict.keys()
+        keys1: dict_keys[str, Any] = current_state_dict.keys()
+        keys2: dict_keys[str, Any] = ckpt_state_dict.keys()
 
         if not include_backbone:
             keys1 = set([k for k in keys1 if not k.startswith("backbone")])
