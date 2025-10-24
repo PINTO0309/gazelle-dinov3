@@ -74,6 +74,72 @@ Dwonloads DINOv3 pretrain pth: From https://github.com/facebookresearch/dinov3 t
 ### GazeFollow
 
 ```
+############################################# Atto
+### distillation - GH200
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_hgnetv2_atto \
+--exp_name gazelle_hgnetv2_atto_distill \
+--log_iter 50 \
+--max_epochs 60 \
+--batch_size 64 \
+--lr 1e-3 \
+--n_workers 50 \
+--use_amp \
+--finetune \
+--finetune_layers 2 \
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--initial_freeze_epochs 10 \
+--unfreeze_interval 2 \
+--distill_teacher gazelle_dinov3_vitb16 \
+--distill_weight 0.3 \
+--distill_temp_end 4.0
+
+############################################# Femto
+### distillation - GH200
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_hgnetv2_femto \
+--exp_name gazelle_hgnetv2_femto_distill \
+--log_iter 50 \
+--max_epochs 55 \
+--batch_size 64 \
+--lr 1e-3 \
+--n_workers 50 \
+--use_amp \
+--finetune \
+--finetune_layers 2 \
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--initial_freeze_epochs 10 \
+--unfreeze_interval 2 \
+--distill_teacher gazelle_dinov3_vitb16 \
+--distill_weight 0.3 \
+--distill_temp_end 4.0
+
+############################################# N
+### distillation - GH200
+uv run python scripts/train_gazefollow.py \
+--data_path data/gazefollow_extended \
+--model_name gazelle_hgnetv2_n \
+--exp_name gazelle_hgnetv2_n_distill \
+--log_iter 50 \
+--max_epochs 50 \
+--batch_size 64 \
+--lr 1e-3 \
+--n_workers 50 \
+--use_amp \
+--finetune \
+--finetune_layers 2 \
+--grad_clip_norm 1.0 \
+--disable_sigmoid \
+--initial_freeze_epochs 10 \
+--unfreeze_interval 2 \
+--distill_teacher gazelle_dinov3_vitb16 \
+--distill_weight 0.3 \
+--distill_temp_end 4.0
+
 ############################################# S
 ### backbone finetune - GH200
 uv run python scripts/train_gazefollow.py \
