@@ -677,11 +677,11 @@ def gazelle_hgnetv2_atto(
         pretrained=pretrained,
         act=act,
     )
-    transform = backbone.get_transform((640, 640))
+    transform = backbone.get_transform((320, 320))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+        model = GazeLLE(backbone, in_size=(320, 320), out_size=(32, 32),apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+        model = GazeLLE_ONNX(backbone, in_size=(320, 320), out_size=(32, 32),apply_sigmoid=apply_sigmoid)
     return model, transform
 
 def gazelle_hgnetv2_femto(
@@ -707,11 +707,11 @@ def gazelle_hgnetv2_femto(
         pretrained=pretrained,
         act=act,
     )
-    transform = backbone.get_transform((320, 320))
+    transform = backbone.get_transform((416, 416))
     if not onnx_export:
-        model = GazeLLE(backbone, in_size=(320, 320), apply_sigmoid=apply_sigmoid)
+        model = GazeLLE(backbone, in_size=(416, 416), out_size=(48, 48), apply_sigmoid=apply_sigmoid)
     else:
-        model = GazeLLE_ONNX(backbone, in_size=(320, 320), apply_sigmoid=apply_sigmoid)
+        model = GazeLLE_ONNX(backbone, in_size=(416, 416), out_size=(48, 48), apply_sigmoid=apply_sigmoid)
     return model, transform
 
 def gazelle_hgnetv2_pico(
@@ -897,6 +897,127 @@ def gazelle_dinov3_vitb16_inout(
         embed_dim=embed_dim,
         num_heads=num_heads,
         patch_size=patch_size,
+    )
+    transform = backbone.get_transform((640, 640))
+    if not onnx_export:
+        model = GazeLLE(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+    else:
+        model = GazeLLE_ONNX(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+    return model, transform
+
+
+def gazelle_hgnetv2_atto_inout(
+    weights_path: str,
+    use_lab: bool,
+    return_idx: List[int],
+    freeze_stem_only: bool,
+    freeze_at: int,
+    freeze_norm: bool,
+    pretrained: bool,
+    act: str,
+    onnx_export: bool,
+    apply_sigmoid: bool,
+):
+    backbone = HGNetv2Backbone(
+        model_name="hgnetv2_atto",
+        weights_path=weights_path,
+        use_lab=use_lab,
+        return_idx=return_idx,
+        freeze_stem_only=freeze_stem_only,
+        freeze_at=freeze_at,
+        freeze_norm=freeze_norm,
+        pretrained=pretrained,
+        act=act,
+    )
+    transform = backbone.get_transform((320, 320))
+    if not onnx_export:
+        model = GazeLLE(backbone, inout=True, in_size=(320, 320), out_size=(32, 32),apply_sigmoid=apply_sigmoid)
+    else:
+        model = GazeLLE_ONNX(backbone, inout=True, in_size=(320, 320), out_size=(32, 32),apply_sigmoid=apply_sigmoid)
+    return model, transform
+
+def gazelle_hgnetv2_femto_inout(
+    weights_path: str,
+    use_lab: bool,
+    return_idx: List[int],
+    freeze_stem_only: bool,
+    freeze_at: int,
+    freeze_norm: bool,
+    pretrained: bool,
+    act: str,
+    onnx_export: bool,
+    apply_sigmoid: bool,
+):
+    backbone = HGNetv2Backbone(
+        model_name="hgnetv2_femto",
+        weights_path=weights_path,
+        use_lab=use_lab,
+        return_idx=return_idx,
+        freeze_stem_only=freeze_stem_only,
+        freeze_at=freeze_at,
+        freeze_norm=freeze_norm,
+        pretrained=pretrained,
+        act=act,
+    )
+    transform = backbone.get_transform((416, 416))
+    if not onnx_export:
+        model = GazeLLE(backbone, inout=True, in_size=(416, 416), out_size=(48, 48), apply_sigmoid=apply_sigmoid)
+    else:
+        model = GazeLLE_ONNX(backbone, inout=True, in_size=(416, 416), out_size=(48, 48), apply_sigmoid=apply_sigmoid)
+    return model, transform
+
+def gazelle_hgnetv2_pico_inout(
+    weights_path: str,
+    use_lab: bool,
+    return_idx: List[int],
+    freeze_stem_only: bool,
+    freeze_at: int,
+    freeze_norm: bool,
+    pretrained: bool,
+    act: str,
+    onnx_export: bool,
+    apply_sigmoid: bool,
+):
+    backbone = HGNetv2Backbone(
+        model_name="hgnetv2_pico",
+        weights_path=weights_path,
+        use_lab=use_lab,
+        return_idx=return_idx,
+        freeze_stem_only=freeze_stem_only,
+        freeze_at=freeze_at,
+        freeze_norm=freeze_norm,
+        pretrained=pretrained,
+        act=act,
+    )
+    transform = backbone.get_transform((640, 640))
+    if not onnx_export:
+        model = GazeLLE(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+    else:
+        model = GazeLLE_ONNX(backbone, inout=True, in_size=(640, 640), apply_sigmoid=apply_sigmoid)
+    return model, transform
+
+def gazelle_hgnetv2_n_inout(
+    weights_path: str,
+    use_lab: bool,
+    return_idx: List[int],
+    freeze_stem_only: bool,
+    freeze_at: int,
+    freeze_norm: bool,
+    pretrained: bool,
+    act: str,
+    onnx_export: bool,
+    apply_sigmoid: bool,
+):
+    backbone = HGNetv2Backbone(
+        model_name="hgnetv2_n",
+        weights_path=weights_path,
+        use_lab=use_lab,
+        return_idx=return_idx,
+        freeze_stem_only=freeze_stem_only,
+        freeze_at=freeze_at,
+        freeze_norm=freeze_norm,
+        pretrained=pretrained,
+        act=act,
     )
     transform = backbone.get_transform((640, 640))
     if not onnx_export:

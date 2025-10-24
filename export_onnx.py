@@ -37,6 +37,16 @@ models = {
     # "gazelle_dinov2_vitl14_inout": ["ckpts/gazelle_dinov2_vitl14_inout.pt", True],
 
     # DINOv3
+    "gazelle_hgnetv2_atto": ["ckpts/gazelle_hgnetv2_atto.pt", False, 320, 320],
+    "gazelle_hgnetv2_femto": ["ckpts/gazelle_hgnetv2_femto.pt", False, 416, 416],
+    "gazelle_hgnetv2_pico": ["ckpts/gazelle_hgnetv2_pico.pt", False, 640, 640],
+    "gazelle_hgnetv2_n": ["ckpts/gazelle_hgnetv2_n.pt", False, 640, 640],
+
+    "gazelle_hgnetv2_atto_inout": ["ckpts/gazelle_hgnetv2_atto_inout.pt", True, 320, 320],
+    "gazelle_hgnetv2_femto_inout": ["ckpts/gazelle_hgnetv2_femto_inout.pt", True, 416, 416],
+    "gazelle_hgnetv2_pico_inout": ["ckpts/gazelle_hgnetv2_pico_inout.pt", True, 640, 640],
+    "gazelle_hgnetv2_n_inout": ["ckpts/gazelle_hgnetv2_n_inout.pt", True, 640, 640],
+
     "gazelle_dinov3_vit_tiny": ["ckpts/gazelle_dinov3_vit_tiny.pt", False, 640, 640],
     "gazelle_dinov3_vit_tinyplus": ["ckpts/gazelle_dinov3_vit_tinyplus.pt", False, 640, 640],
     "gazelle_dinov3_vits16": ["ckpts/gazelle_dinov3_vits16.pt", False, 640, 640],
