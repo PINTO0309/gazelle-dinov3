@@ -2,12 +2,14 @@ from abc import ABC, abstractmethod
 import os
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torchvision.transforms as transforms
 import math
 import numpy as np
 import warnings
-from typing import Literal, Tuple, List, Optional
+from typing import Literal, Tuple, List, Optional, Dict
 from functools import partial
+import logging
 
 # Abstract Backbone class
 class Backbone(nn.Module, ABC):
@@ -152,7 +154,15 @@ class DinoV2Backbone(Backbone):
             transforms.Resize(in_size),
         ])
 
-# https://github.com/PINTO0309/DEIMv2/blob/uv/engine/backbone/vit_tiny.py#L230
+"""
+Modified from https://github.com/PINTO0309/DEIMv2/blob/uv/engine/backbone/vit_tiny.py#L230
+
+DEIMv2: Real-Time Object Detection Meets DINOv3
+Copyright (c) 2025 The DEIMv2 Authors. All Rights Reserved.
+---------------------------------------------------------------------------------
+Modified from DINOv3 (https://github.com/facebookresearch/dinov3)
+Modified from https://huggingface.co/spaces/Hila/RobustViT/blob/main/ViT/ViT_new.py
+"""
 class RopePositionEmbedding(nn.Module):
     def __init__(
         self,
@@ -460,7 +470,19 @@ class VisionTransformer(nn.Module):
                 outs.append((x[:, 1:], x[:, 0]))
         return outs
 
-# https://github.com/PINTO0309/DEIMv2/blob/ead47f17f4ced0c9fe1bf80126441e42b2c4a3d8/engine/backbone/dinov3_adapter.py#L72
+"""
+Modified from https://github.com/Intellindust-AI-Lab/DEIMv2/blob/cb1594c7876edb72cca91ec774671e741728a59d/engine/backbone/dinov3_adapter.py#L72
+
+DEIMv2: Real-Time Object Detection Meets DINOv3
+Copyright (c) 2025 The DEIMv2 Authors. All Rights Reserved.
+---------------------------------------------------------------------------------
+Modified from DINOv3 (https://github.com/facebookresearch/dinov3)
+
+Copyright (c) Meta Platforms, Inc. and affiliates.
+
+This software may be used and distributed in accordance with
+the terms of the DINOv3 License Agreement.
+"""
 class DinoV3Backbone(Backbone):
     def __init__(
         self,
@@ -580,5 +602,693 @@ class DinoV3Backbone(Backbone):
                 mean=[0.485,0.456,0.406],
                 std=[0.229,0.224,0.225]
             ),
+            transforms.Resize(in_size),
+        ])
+
+
+class LearnableAffineBlock(nn.Module):
+    def __init__(
+            self,
+            scale_value=1.0,
+            bias_value=0.0
+    ):
+        super().__init__()
+        self.scale = nn.Parameter(torch.tensor([scale_value]), requires_grad=True)
+        self.bias = nn.Parameter(torch.tensor([bias_value]), requires_grad=True)
+
+    def forward(self, x):
+        return self.scale * x + self.bias
+
+class ConvBNAct(nn.Module):
+    def __init__(
+            self,
+            in_chs,
+            out_chs,
+            kernel_size,
+            stride=1,
+            groups=1,
+            padding='',
+            use_act=True,
+            use_lab=False,
+            act='relu',
+    ):
+        super().__init__()
+        self.use_act = use_act
+        self.use_lab = use_lab
+        if padding == 'same':
+            self.conv = nn.Sequential(
+                nn.ZeroPad2d([0, 1, 0, 1]),
+                nn.Conv2d(
+                    in_chs,
+                    out_chs,
+                    kernel_size,
+                    stride,
+                    groups=groups,
+                    bias=False
+                )
+            )
+        else:
+            self.conv = nn.Conv2d(
+                in_chs,
+                out_chs,
+                kernel_size,
+                stride,
+                padding=(kernel_size - 1) // 2,
+                groups=groups,
+                bias=False
+            )
+        self.bn = nn.BatchNorm2d(out_chs)
+        if self.use_act:
+            # self.act = nn.ReLU()
+            self.act = self.get_activation(act)
+        else:
+            self.act = nn.Identity()
+        if self.use_act and self.use_lab:
+            self.lab = LearnableAffineBlock()
+        else:
+            self.lab = nn.Identity()
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.act(x)
+        x = self.lab(x)
+        return x
+
+    # https://github.com/Intellindust-AI-Lab/DEIMv2/blob/cb1594c7876edb72cca91ec774671e741728a59d/engine/backbone/common.py#L81C1-L116C13
+    @staticmethod
+    def get_activation(act: str, inplace: bool=True):
+        """get activation
+        """
+        if act is None:
+            return nn.Identity()
+
+        elif isinstance(act, nn.Module):
+            return act
+
+        act = act.lower()
+
+        if act == 'silu' or act == 'swish':
+            m = nn.SiLU()
+
+        elif act == 'relu':
+            m = nn.ReLU()
+
+        elif act == 'leaky_relu':
+            m = nn.LeakyReLU()
+
+        elif act == 'silu':
+            m = nn.SiLU()
+
+        elif act == 'gelu':
+            m = nn.GELU()
+
+        elif act == 'hardsigmoid':
+            m = nn.Hardsigmoid()
+
+        else:
+            raise RuntimeError('')
+
+        if hasattr(m, 'inplace'):
+            m.inplace = inplace
+
+        return m
+
+class LightConvBNAct(nn.Module):
+    def __init__(
+            self,
+            in_chs,
+            out_chs,
+            kernel_size,
+            groups=1,
+            use_lab=False,
+            act='relu',
+    ):
+        super().__init__()
+        self.conv1 = ConvBNAct(
+            in_chs,
+            out_chs,
+            kernel_size=1,
+            use_act=False,
+            use_lab=use_lab,
+            act=act,
+        )
+        self.conv2 = ConvBNAct(
+            out_chs,
+            out_chs,
+            kernel_size=kernel_size,
+            groups=out_chs,
+            use_act=True,
+            use_lab=use_lab,
+            act=act,
+        )
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        return x
+
+class StemBlock(nn.Module):
+    # for HGNetv2
+    def __init__(self, in_chs, mid_chs, out_chs, use_lab=False, act='relu'):
+        super().__init__()
+        self.stem1 = ConvBNAct(
+            in_chs,
+            mid_chs,
+            kernel_size=3,
+            stride=2,
+            use_lab=use_lab,
+            act=act,
+        )
+        self.stem2a = ConvBNAct(
+            mid_chs,
+            mid_chs // 2,
+            kernel_size=2,
+            stride=1,
+            use_lab=use_lab,
+            act=act,
+        )
+        self.stem2b = ConvBNAct(
+            mid_chs // 2,
+            mid_chs,
+            kernel_size=2,
+            stride=1,
+            use_lab=use_lab,
+            act=act,
+        )
+        self.stem3 = ConvBNAct(
+            mid_chs * 2,
+            mid_chs,
+            kernel_size=3,
+            stride=2,
+            use_lab=use_lab,
+            act=act,
+            )
+        self.stem4 = ConvBNAct(
+            mid_chs,
+            out_chs,
+            kernel_size=1,
+            stride=1,
+            use_lab=use_lab,
+            act=act,
+        )
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=1, ceil_mode=True)
+
+    def forward(self, x):
+        x = self.stem1(x)
+        x = F.pad(x, (0, 1, 0, 1))
+        x2 = self.stem2a(x)
+        x2 = F.pad(x2, (0, 1, 0, 1))
+        x2 = self.stem2b(x2)
+        x1 = self.pool(x)
+        x = torch.cat([x1, x2], dim=1)
+        x = self.stem3(x)
+        x = self.stem4(x)
+        return x
+
+class EseModule(nn.Module):
+    def __init__(self, chs):
+        super().__init__()
+        self.conv = nn.Conv2d(
+            chs,
+            chs,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        identity = x
+        x = x.mean((2, 3), keepdim=True)
+        x = self.conv(x)
+        x = self.sigmoid(x)
+        return torch.mul(identity, x)
+
+class HG_Block(nn.Module):
+    def __init__(
+            self,
+            in_chs,
+            mid_chs,
+            out_chs,
+            layer_num,
+            kernel_size=3,
+            residual=False,
+            light_block=False,
+            use_lab=False,
+            agg='ese',
+            drop_path=0.,
+            act='relu',
+    ):
+        super().__init__()
+        self.residual = residual
+
+        self.layers = nn.ModuleList()
+        for i in range(layer_num):
+            if light_block:
+                self.layers.append(
+                    LightConvBNAct(
+                        in_chs if i == 0 else mid_chs,
+                        mid_chs,
+                        kernel_size=kernel_size,
+                        use_lab=use_lab,
+                        act=act,
+                    )
+                )
+            else:
+                self.layers.append(
+                    ConvBNAct(
+                        in_chs if i == 0 else mid_chs,
+                        mid_chs,
+                        kernel_size=kernel_size,
+                        stride=1,
+                        use_lab=use_lab,
+                        act=act,
+                    )
+                )
+
+        # feature aggregation
+        total_chs = in_chs + layer_num * mid_chs
+        if agg == 'se':
+            aggregation_squeeze_conv = ConvBNAct(
+                total_chs,
+                out_chs // 2,
+                kernel_size=1,
+                stride=1,
+                use_lab=use_lab,
+                act=act,
+            )
+            aggregation_excitation_conv = ConvBNAct(
+                out_chs // 2,
+                out_chs,
+                kernel_size=1,
+                stride=1,
+                use_lab=use_lab,
+                act=act,
+            )
+            self.aggregation = nn.Sequential(
+                aggregation_squeeze_conv,
+                aggregation_excitation_conv,
+            )
+        else:
+            aggregation_conv = ConvBNAct(
+                total_chs,
+                out_chs,
+                kernel_size=1,
+                stride=1,
+                use_lab=use_lab,
+                act=act,
+            )
+            att = EseModule(out_chs)
+            self.aggregation = nn.Sequential(
+                aggregation_conv,
+                att,
+            )
+
+        self.drop_path = nn.Dropout(drop_path) if drop_path else nn.Identity()
+
+    def forward(self, x):
+        identity = x
+        output = [x]
+        for layer in self.layers:
+            x = layer(x)
+            output.append(x)
+        x = torch.cat(output, dim=1)
+        x = self.aggregation(x)
+        if self.residual:
+            x = self.drop_path(x) + identity
+        return x
+
+class HG_Stage(nn.Module):
+    def __init__(
+            self,
+            in_chs,
+            mid_chs,
+            out_chs,
+            block_num,
+            layer_num,
+            downsample=True,
+            light_block=False,
+            kernel_size=3,
+            use_lab=False,
+            agg='se',
+            drop_path=0.,
+            act='relu',
+    ):
+        super().__init__()
+        self.downsample = downsample
+        if downsample:
+            self.downsample = ConvBNAct(
+                in_chs,
+                in_chs,
+                kernel_size=3,
+                stride=2,
+                groups=in_chs,
+                use_act=False,
+                use_lab=use_lab,
+                act=act,
+            )
+        else:
+            self.downsample = nn.Identity()
+
+        blocks_list = []
+        for i in range(block_num):
+            blocks_list.append(
+                HG_Block(
+                    in_chs if i == 0 else out_chs,
+                    mid_chs,
+                    out_chs,
+                    layer_num,
+                    residual=False if i == 0 else True,
+                    kernel_size=kernel_size,
+                    light_block=light_block,
+                    use_lab=use_lab,
+                    agg=agg,
+                    drop_path=drop_path[i] if isinstance(drop_path, (list, tuple)) else drop_path,
+                    act=act,
+                )
+            )
+        self.blocks = nn.Sequential(*blocks_list)
+
+    def forward(self, x):
+        x = self.downsample(x)
+        x = self.blocks(x)
+        return x
+
+# https://github.com/Intellindust-AI-Lab/DEIMv2/blob/cb1594c7876edb72cca91ec774671e741728a59d/engine/backbone/common.py#L27C1-L68C10
+class FrozenBatchNorm2d(nn.Module):
+    """copy and modified from https://github.com/facebookresearch/detr/blob/master/models/backbone.py
+    BatchNorm2d where the batch statistics and the affine parameters are fixed.
+    Copy-paste from torchvision.misc.ops with added eps before rqsrt,
+    without which any other models than torchvision.models.resnet[18,34,50,101]
+    produce nans.
+    """
+    def __init__(self, num_features, eps=1e-5):
+        super(FrozenBatchNorm2d, self).__init__()
+        n = num_features
+        self.register_buffer("weight", torch.ones(n))
+        self.register_buffer("bias", torch.zeros(n))
+        self.register_buffer("running_mean", torch.zeros(n))
+        self.register_buffer("running_var", torch.ones(n))
+        self.eps = eps
+        self.num_features = n
+        self.weight: torch.Tensor
+        self.bias: torch.Tensor
+        self.running_var: torch.Tensor
+        self.running_mean: torch.Tensor
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+        num_batches_tracked_key = prefix + 'num_batches_tracked'
+        if num_batches_tracked_key in state_dict:
+            del state_dict[num_batches_tracked_key]
+
+        super(FrozenBatchNorm2d, self)._load_from_state_dict(
+            state_dict, prefix, local_metadata, strict,
+            missing_keys, unexpected_keys, error_msgs)
+
+    def forward(self, x):
+        # move reshapes to the beginning
+        # to make it fuser-friendly
+        w = self.weight.reshape(1, -1, 1, 1)
+        b = self.bias.reshape(1, -1, 1, 1)
+        rv = self.running_var.reshape(1, -1, 1, 1)
+        rm = self.running_mean.reshape(1, -1, 1, 1)
+        scale = w * (rv + self.eps).rsqrt()
+        bias = b - rm * scale
+        return x * scale + bias
+
+    def extra_repr(self):
+        return (
+            "{num_features}, eps={eps}".format(**self.__dict__)
+        )
+
+"""
+Modified from https://github.com/Intellindust-AI-Lab/DEIMv2/blob/cb1594c7876edb72cca91ec774671e741728a59d/engine/backbone/hgnetv2.py
+
+DEIMv2: Real-Time Object Detection Meets DINOv3
+Copyright (c) 2025 The DEIMv2 Authors. All Rights Reserved.
+---------------------------------------------------------------------------------
+Modified from D-FINE (https://github.com/Peterande/D-FINEr)
+
+reference
+- https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/modeling/backbones/hgnet_v2.py
+
+Copyright (c) 2024 The D-FINE Authors. All Rights Reserved.
+"""
+class HGNetv2Backbone(Backbone):
+    def __init__(
+        self,
+        model_name=None,
+        weights_path=None,
+        use_lab=True,
+        return_idx=[1, 2, 3],
+        freeze_stem_only=True,
+        freeze_at=0,
+        freeze_norm=False,
+        pretrained=True,
+        local_model_dir='ckpts',
+        act='relu',
+    ):
+        super(HGNetv2Backbone, self).__init__()
+
+        model_name_mapper: Dict[Dict] = {
+            'hgnetv2_atto': 'Atto',
+            'hgnetv2_femto': 'Femto',
+            'hgnetv2_pico': 'Pico',
+            'hgnetv2_n': 'B0',
+        }
+
+        self.arch_configs: Dict = {
+            'Atto': {      # only 3 stages
+                'stem_channels': [3, 16, 16],
+                'stage_config': {
+                    # in_channels, mid_channels, out_channels, num_blocks, downsample, light_block, kernel_size, layer_num
+                    "stage1": [16, 16, 64, 1, False, False, 3, 3],
+                    "stage2": [64, 32, 256, 1, True, False, 3, 3],
+                    "stage3": [256, 64, 256, 1, True, True, 3, 3],
+                },
+                'url': 'https://github.com/Peterande/storage/releases/download/dfinev1.0/PPHGNetV2_B0_stage1.pth'
+            },
+            'Femto': {      # only 3 stages
+                'stem_channels': [3, 16, 16],
+                'stage_config': {
+                    # in_channels, mid_channels, out_channels, num_blocks, downsample, light_block, kernel_size, layer_num
+                    "stage1": [16, 16, 64, 1, False, False, 3, 3],
+                    "stage2": [64, 32, 256, 1, True, False, 3, 3],
+                    "stage3": [256, 64, 512, 1, True, True, 5, 3],
+                },
+                'url': 'https://github.com/Peterande/storage/releases/download/dfinev1.0/PPHGNetV2_B0_stage1.pth'
+            },
+            'Pico': {      # only 3 stages
+                'stem_channels': [3, 16, 16],
+                'stage_config': {
+                    # in_channels, mid_channels, out_channels, num_blocks, downsample, light_block, kernel_size, layer_num
+                    "stage1": [16, 16, 64, 1, False, False, 3, 3],
+                    "stage2": [64, 32, 256, 1, True, False, 3, 3],
+                    "stage3": [256, 64, 512, 2, True, True, 5, 3],
+                },
+                'url': 'https://github.com/Peterande/storage/releases/download/dfinev1.0/PPHGNetV2_B0_stage1.pth'
+            },
+            'B0': {
+                'stem_channels': [3, 16, 16],
+                'stage_config': {
+                    # in_channels, mid_channels, out_channels, num_blocks, downsample, light_block, kernel_size, layer_num
+                    "stage1": [16, 16, 64, 1, False, False, 3, 3],
+                    "stage2": [64, 32, 256, 1, True, False, 3, 3],
+                    "stage3": [256, 64, 512, 2, True, True, 5, 3],
+                    "stage4": [512, 128, 1024, 1, True, True, 5, 3],
+                },
+                'url': 'https://github.com/Peterande/storage/releases/download/dfinev1.0/PPHGNetV2_B0_stage1.pth'
+            },
+
+        }
+
+        print(f'model_name: {model_name}')
+
+        self.use_lab = use_lab
+        self.return_idx = list(return_idx)
+
+        arch_name: str = model_name_mapper.get(model_name, 'hgnetv2_n')
+        arch: Dict = self.arch_configs.get(arch_name, 'B0')
+        stem_channels = arch.get('stem_channels', [3, 16, 16])
+        stage_config = arch.get(
+            'stage_config',
+            {
+                # in_channels, mid_channels, out_channels, num_blocks, downsample, light_block, kernel_size, layer_num
+                "stage1": [16, 16, 64, 1, False, False, 3, 3],
+                "stage2": [64, 32, 256, 1, True, False, 3, 3],
+                "stage3": [256, 64, 512, 2, True, True, 5, 3],
+                "stage4": [512, 128, 1024, 1, True, True, 5, 3],
+            }
+        )
+        download_url = arch.get('url', 'https://github.com/Peterande/storage/releases/download/dfinev1.0/PPHGNetV2_B0_stage1.pth')
+
+        self._stage_specs = [stage_config[k] for k in stage_config]
+        self._out_channels = [spec[2] for spec in self._stage_specs]
+        self._out_strides = [4, 8, 16, 32][:len(self._stage_specs)]
+        if not self._out_strides:
+            raise ValueError("HGNetv2Backbone requires at least one stage configuration.")
+        self.return_idx = sorted(
+            {idx for idx in self.return_idx if 0 <= idx < len(self._stage_specs)}
+        )
+        if not self.return_idx:
+            self.return_idx = [len(self._stage_specs) - 1]
+        # Prefer the stride-16 stage (matches DINOv3 patch stride) when available.
+        self._feature_stage_idx = next(
+            (
+                idx for idx in self.return_idx
+                if idx < len(self._out_strides) and self._out_strides[idx] == 16
+            ),
+            None,
+        )
+        if self._feature_stage_idx is None:
+            if 16 in self._out_strides:
+                self._feature_stage_idx = self._out_strides.index(16)
+            else:
+                self._feature_stage_idx = self.return_idx[-1]
+        self._output_channels = self._out_channels[self._feature_stage_idx]
+        self._output_stride = self._out_strides[self._feature_stage_idx]
+        print(f"        ### Backbone.act: {act} ###     ")
+        print(f"        ### Backbone.act: {act} ###     ")
+
+        # stem
+        self.stem = StemBlock(
+                in_chs=stem_channels[0],
+                mid_chs=stem_channels[1],
+                out_chs=stem_channels[2],
+                use_lab=use_lab,
+                act=act)
+
+        # stages
+        self.stages = nn.ModuleList()
+        for i, spec in enumerate(self._stage_specs):
+            in_channels, mid_channels, out_channels, block_num, downsample, light_block, kernel_size, layer_num = spec
+            self.stages.append(
+                HG_Stage(
+                    in_channels,
+                    mid_channels,
+                    out_channels,
+                    block_num,
+                    layer_num,
+                    downsample,
+                    light_block,
+                    kernel_size,
+                    use_lab,
+                    act=act)
+            )
+
+        if freeze_at >= 0:
+            self._freeze_parameters(self.stem)
+            if not freeze_stem_only:
+                for i in range(min(freeze_at + 1, len(self.stages))):
+                    self._freeze_parameters(self.stages[i])
+
+        if freeze_norm:
+            self._freeze_norm(self)
+
+        if pretrained:
+            RED, GREEN, RESET = "\033[91m", "\033[92m", "\033[0m"
+            is_dist = torch.distributed.is_available() and torch.distributed.is_initialized()
+            is_rank0 = torch.distributed.get_rank() == 0 if is_dist else True
+            try:
+                default_path = os.path.join(local_model_dir, 'PPHGNetV2_B0_stage1.pth')
+                model_path = weights_path if weights_path is not None else default_path
+                model_dir = os.path.dirname(model_path)
+                if model_dir:
+                    os.makedirs(model_dir, exist_ok=True)
+
+                if os.path.exists(model_path):
+                    state = torch.load(model_path, map_location='cpu')
+                    print(f"Loaded stage1 {arch_name} HGNetV2 from local file.")
+                else:
+                    if is_rank0:
+                        print(f"{GREEN}If the pretrained HGNetV2 can't be downloaded automatically. Please check your network connection.{RESET}")
+                        print(f"{GREEN}Please check your network connection. Or download the model manually from {RESET}{download_url}{GREEN} to {RESET}{model_dir or os.getcwd()}.{RESET}")
+                        state = torch.hub.load_state_dict_from_url(download_url, map_location='cpu', model_dir=model_dir or '.')
+                        if is_dist:
+                            torch.distributed.barrier()
+                    else:
+                        if is_dist:
+                            torch.distributed.barrier()
+                        state = torch.load(model_path, map_location='cpu')
+                    print(f"Loaded stage1 {arch_name} HGNetV2 from URL.")
+
+                if arch_name == 'Atto':
+                    self.load_partial_state_dict(self, state)
+                elif arch_name in ('Femto', 'Pico'):
+                    missing_keys, unexpected_keys = self.load_state_dict(state, strict=False)
+                    print("Missing keys:", missing_keys)
+                    print("Unexpected keys:", unexpected_keys)
+                else:
+                    self.load_state_dict(state)
+
+            except (Exception, KeyboardInterrupt) as e:
+                if is_rank0:
+                    print(f"{str(e)}")
+                    logging.error(f"{RED}CRITICAL WARNING: Failed to load pretrained HGNetV2 model{RESET}")
+                    logging.error(f"{GREEN}Please check your network connection. Or download the model manually from {RESET}{download_url}{GREEN} to {RESET}{local_model_dir}.{RESET}")
+                exit()
+
+    @staticmethod
+    def load_partial_state_dict(model: nn.Module, state_dict: Dict):
+        model_dict: Dict = model.state_dict()
+        # Just hold shape exact matching number
+        filtered_dict = {k: v for k, v in state_dict.items()
+                        if k in model_dict and v.shape == model_dict[k].shape}
+
+        # Updated model number
+        model_dict.update(filtered_dict)
+        model.load_state_dict(model_dict, strict=False)
+        missing = set(model_dict.keys()) - set(filtered_dict.keys())
+        unexpected = set(state_dict.keys()) - set(filtered_dict.keys())
+        print("Missing keys:", missing)
+        print("   #########################################################")
+        print("Unexpected keys:", unexpected)
+
+    def _freeze_norm(self, module: nn.Module):
+        stack: List[Tuple[nn.Module, Optional[nn.Module], Optional[str]]] = [(module, None, None)]
+        while stack:
+            current, parent, name = stack.pop()
+            if isinstance(current, nn.BatchNorm2d):
+                frozen = FrozenBatchNorm2d(current.num_features)
+                with torch.no_grad():
+                    if current.affine:
+                        frozen.weight.copy_(current.weight.data)
+                        frozen.bias.copy_(current.bias.data)
+                    frozen.running_mean.copy_(current.running_mean.data)
+                    frozen.running_var.copy_(current.running_var.data)
+                if parent is not None and name is not None:
+                    parent._modules[name] = frozen
+                continue
+            for child_name, child in current.named_children():
+                stack.append((child, current, child_name))
+        return module
+
+    def _freeze_parameters(self, m: nn.Module):
+        for p in m.parameters():
+            p.requires_grad = False
+
+    def forward(self, x: torch.Tensor):
+        x = self.stem(x)
+        selected: Optional[torch.Tensor] = None
+        for idx, stage in enumerate(self.stages):
+            x = stage(x)
+            if idx == self._feature_stage_idx:
+                selected = x
+        if selected is None:
+            selected = x
+        return selected
+
+    def get_dimension(self):
+        return self._output_channels
+
+    def get_out_size(self, in_size):
+        h, w = in_size
+        return (h // self._output_stride, w // self._output_stride)
+
+    def get_transform(self, in_size):
+        return transforms.Compose([
+            transforms.ToTensor(),
             transforms.Resize(in_size),
         ])

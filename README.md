@@ -5,9 +5,9 @@
 
 > [!Note]
 > **October 23, 2025 :** A checkpoint file `.pt` containing `VideoAttentionTarget`'s trained weights and statistical information has been released.
-> 
+>
 > **October 22, 2025 :** A checkpoint file `.pt` containing `GazeFollow`'s trained weights and statistical information has been released.
-> 
+>
 > **October 19, 2025 :** I am continuing to experiment to achieve better accuracy, so this repository is still a work in progress.
 
 A model for activating human gaze regions using heat maps. Built with DINOv3.
@@ -58,6 +58,9 @@ source .venv/bin/activate
 Dwonloads Distill-DINOv3 pretrain pt to `ckpts`. The weights were borrowed from [Intellindust-AI-Lab/DEIMv2](https://github.com/Intellindust-AI-Lab/DEIMv2).
 - https://github.com/PINTO0309/DEIMv2/releases/download/weights/vitt_distill.pt
 - https://github.com/PINTO0309/DEIMv2/releases/download/weights/vittplus_distill.pt
+
+Dwonloads PPHGNetV2 pretrain pt to `ckpts`. The weights were borrowed from [Peterande/D-FINE](https://github.com/Peterande/storage).
+- https://github.com/PINTO0309/DEIMv2/releases/download/weights/PPHGNetV2_B0_stage1.pth
 
 Dwonloads DINOv3 pretrain pth: From https://github.com/facebookresearch/dinov3 to `ckpts`.
 - `dinov3_vits16_pretrain_lvd1689m-08c60483.pth`
@@ -477,7 +480,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |S|M|
   |:-:|:-:|
   |<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vit_tiny_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/ec1fcbf9-70d8-4b6c-aa8a-d2efbd6079ae" />|<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vit_tinyplus_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/14ba0f97-247a-4d48-90cf-cff91c1b9b20" />|
-  
+
   |L|X|
   |:-:|:-:|
   |<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vits16_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/c51e3c81-65ba-4216-8907-087d505eeaea" />|<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vits16plus_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/e59b053f-10e8-4b59-abe7-76b8858fc14f" />|
