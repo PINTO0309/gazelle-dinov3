@@ -463,7 +463,25 @@ def main():
                 temperature = max(1e-6, temperature)
                 with torch.no_grad():
                     with autocast('cuda', enabled=args.use_amp):
-                        teacher_preds = teacher_model({"images": imgs_cuda, "bboxes": bbox_inputs})
+                        teacher_imgs = imgs_cuda
+                        teacher_in_size = getattr(teacher_model, "in_size", None)
+                        if (
+                            teacher_in_size is not None
+                            and isinstance(teacher_in_size, (tuple, list))
+                            and len(teacher_in_size) == 2
+                        ):
+                            t_h, t_w = int(teacher_in_size[0]), int(teacher_in_size[1])
+                            if (
+                                teacher_imgs.shape[-2] != t_h
+                                or teacher_imgs.shape[-1] != t_w
+                            ):
+                                teacher_imgs = F.interpolate(
+                                    teacher_imgs,
+                                    size=(t_h, t_w),
+                                    mode='bilinear',
+                                    align_corners=False,
+                                )
+                        teacher_preds = teacher_model({"images": teacher_imgs, "bboxes": bbox_inputs})
                         teacher_heatmaps = torch.stack(teacher_preds['heatmap']).squeeze(dim=1)
                 if teacher_heatmaps.shape[-2:] != loss_inputs.shape[-2:]:
                     teacher_heatmaps = F.interpolate(
