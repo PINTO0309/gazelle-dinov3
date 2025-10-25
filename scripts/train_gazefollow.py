@@ -14,6 +14,7 @@ import math
 from tqdm import tqdm
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from torch.amp import autocast, GradScaler
 
@@ -407,9 +408,14 @@ def main():
                   f"but current run uses max_epochs={args.max_epochs}.")
         print(f"Resuming training from {args.resume} at epoch {start_epoch}")
 
-    train_dataset = GazeDataset('gazefollow', args.data_path, 'train', transform)
+    model_out_hw = getattr(model, "out_size", (64, 64))
+    if isinstance(model_out_hw, int):
+        model_out_hw = (model_out_hw, model_out_hw)
+    model_out_hw = tuple(int(x) for x in model_out_hw)
+
+    train_dataset = GazeDataset('gazefollow', args.data_path, 'train', transform, heatmap_size=model_out_hw)
     train_dl = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=args.n_workers)
-    eval_dataset = GazeDataset('gazefollow', args.data_path, 'test', transform)
+    eval_dataset = GazeDataset('gazefollow', args.data_path, 'test', transform, heatmap_size=model_out_hw)
     eval_dl = torch.utils.data.DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn, num_workers=args.n_workers)
     total_train_steps = max(1, len(train_dl) * args.max_epochs) if distill_enabled else 1
 
@@ -459,6 +465,13 @@ def main():
                     with autocast('cuda', enabled=args.use_amp):
                         teacher_preds = teacher_model({"images": imgs_cuda, "bboxes": bbox_inputs})
                         teacher_heatmaps = torch.stack(teacher_preds['heatmap']).squeeze(dim=1)
+                if teacher_heatmaps.shape[-2:] != loss_inputs.shape[-2:]:
+                    teacher_heatmaps = F.interpolate(
+                        teacher_heatmaps.unsqueeze(1),
+                        size=loss_inputs.shape[-2:],
+                        mode='bilinear',
+                        align_corners=False,
+                    ).squeeze(1)
                 teacher_heatmaps = teacher_heatmaps.float()
                 if args.disable_sigmoid:
                     student_logits = loss_inputs

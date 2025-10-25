@@ -22,7 +22,7 @@ def load_data_gazefollow(file):
 
 
 class GazeDataset(torch.utils.data.dataset.Dataset):
-    def __init__(self, dataset_name, path, split, transform, in_frame_only=True, sample_rate=1):
+    def __init__(self, dataset_name, path, split, transform, heatmap_size=(64, 64), in_frame_only=True, sample_rate=1):
         self.dataset_name = dataset_name
         self.path = path
         self.split = split
@@ -30,6 +30,10 @@ class GazeDataset(torch.utils.data.dataset.Dataset):
         self.transform = transform
         self.in_frame_only = in_frame_only
         self.sample_rate = sample_rate
+        if isinstance(heatmap_size, int):
+            heatmap_size = (heatmap_size, heatmap_size)
+        self.heatmap_height = int(heatmap_size[0])
+        self.heatmap_width = int(heatmap_size[1])
 
         if dataset_name == "gazefollow":
             self.data = load_data_gazefollow(os.path.join(self.path, "{}_preprocessed.json".format(split)))
@@ -82,7 +86,7 @@ class GazeDataset(torch.utils.data.dataset.Dataset):
         img = self.transform(img)
 
         if self.split == "train":
-            heatmap = utils.get_heatmap(gazex_norm[0], gazey_norm[0], 64, 64) # note for training set, there is only one annotation
+            heatmap = utils.get_heatmap(gazex_norm[0], gazey_norm[0], self.heatmap_height, self.heatmap_width) # note for training set, there is only one annotation
             return img, bbox_norm, gazex_norm, gazey_norm, torch.tensor(inout), height, width, heatmap
         else:
             return img, bbox_norm, gazex_norm, gazey_norm, torch.tensor(inout), height, width
@@ -97,5 +101,4 @@ def collate_fn(batch):
         torch.stack(items) if isinstance(items[0], torch.Tensor) else list(items)
         for items in transposed
     )
-
 
