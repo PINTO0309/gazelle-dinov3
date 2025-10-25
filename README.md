@@ -454,8 +454,8 @@ uv run python scripts/train_vat.py \
 --frame_sample_every 6 \
 --log_iter 50 \
 --max_epochs 50 \
---batch_size 64 \
---n_workers 50 \
+--batch_size 128 \
+--n_workers 60 \
 --lr_non_inout 1e-5 \
 --lr_inout 1e-2 \
 --inout_loss_lambda 1.0 \
