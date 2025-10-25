@@ -3,17 +3,20 @@ from PIL import Image, ImageDraw
 import numpy as np
 import matplotlib.pyplot as plt
 import torchvision
+import torch.nn.functional as NF
+import torchvision.transforms.functional as TF
 import random
 from sklearn.metrics import roc_auc_score
+from typing import List
 
 from torchvision.transforms.v2 import RandomPhotometricDistort
 _RANDOM_PHOTOMETRIC_DISTORT = RandomPhotometricDistort(p=1.0)
 
-def repeat_tensors(tensor, repeat_counts):
+def repeat_tensors(tensor: torch.Tensor, repeat_counts):
     repeated_tensors = [tensor[i:i+1].repeat(repeat, *[1] * (tensor.ndim - 1)) for i, repeat in enumerate(repeat_counts)]
     return torch.cat(repeated_tensors, dim=0)
 
-def split_tensors(tensor, split_counts):
+def split_tensors(tensor: torch.Tensor, split_counts):
     split_counts_tensor = torch.as_tensor(split_counts, dtype=torch.long, device=tensor.device)
     if split_counts_tensor.ndim != 1:
         split_counts_tensor = split_counts_tensor.view(-1)
@@ -22,7 +25,7 @@ def split_tensors(tensor, split_counts):
     )
     return [tensor[indices[i]:indices[i + 1]] for i in range(split_counts_tensor.numel())]
 
-def visualize_heatmap(pil_image, heatmap, bbox=None):
+def visualize_heatmap(pil_image: Image.Image, heatmap, bbox=None):
     if isinstance(heatmap, torch.Tensor):
         heatmap = heatmap.detach().cpu().numpy()
     heatmap = Image.fromarray((heatmap * 255).astype(np.uint8)).resize(pil_image.size, Image.Resampling.BILINEAR)
@@ -39,7 +42,7 @@ def visualize_heatmap(pil_image, heatmap, bbox=None):
         draw.rectangle([xmin * width, ymin * height, xmax * width, ymax * height], outline="green", width=3)
     return overlay_image
 
-def stack_and_pad(tensor_list):
+def stack_and_pad(tensor_list: List[torch.Tensor]):
     max_size = max([t.shape[0] for t in tensor_list])
     padded_list = []
     for t in tensor_list:
@@ -49,7 +52,7 @@ def stack_and_pad(tensor_list):
             padded_list.append(torch.cat([t, torch.zeros(max_size - t.shape[0], *t.shape[1:])], dim=0))
     return torch.stack(padded_list)
 
-def random_crop(img, bbox, gazex, gazey, inout):
+def random_crop(img: torch.Tensor, bbox, gazex, gazey, inout):
     width, height = img.size
     bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax = bbox
     # determine feasible crop region (must include bbox and gaze target)
@@ -66,23 +69,23 @@ def random_crop(img, bbox, gazex, gazey, inout):
     except:
         import pdb; pdb.set_trace()
 
-    img = torchvision.transforms.functional.crop(img, ymin, xmin, ymax - ymin, xmax - xmin)
+    img = TF.crop(img, ymin, xmin, ymax - ymin, xmax - xmin)
     bbox = [bbox_xmin - xmin, bbox_ymin - ymin, bbox_xmax - xmin, bbox_ymax - ymin]
     gazex = [x - xmin for x in gazex]
     gazey = [y - ymin for y in gazey]
 
     return img, bbox, gazex, gazey
 
-def horiz_flip(img, bbox, gazex, gazey, inout):
+def horiz_flip(img: torch.Tensor, bbox, gazex, gazey, inout):
     width, height = img.size
-    img = torchvision.transforms.functional.hflip(img)
+    img = TF.hflip(img)
     xmin, ymin, xmax, ymax = bbox
     bbox = [width - xmax, ymin, width - xmin, ymax]
     if inout:
         gazex = [width - x for x in gazex]
     return img, bbox, gazex, gazey
 
-def random_bbox_jitter(img, bbox):
+def random_bbox_jitter(img: torch.Tensor, bbox):
     width, height = img.size
     xmin, ymin, xmax, ymax = bbox
     jitter = 0.2
@@ -138,10 +141,10 @@ def get_heatmap(gazex, gazey, height, width, sigma=3, htype="Gaussian"):
 
 # GazeFollow calculates AUC using original image size with GT (x,y) coordinates set to 1 and everything else as 0
 # References:
-    # https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/eval_on_gazefollow.py#L78
-    # https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/utils/imutils.py#L67
-    # https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/utils/evaluation.py#L7
-def gazefollow_auc(heatmap, gt_gazex, gt_gazey, height, width):
+# https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/eval_on_gazefollow.py#L78
+# https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/utils/imutils.py#L67
+# https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/utils/evaluation.py#L7
+def gazefollow_auc(heatmap: torch.Tensor, gt_gazex, gt_gazey, height, width):
     target_map = np.zeros((height, width))
     for point in zip(gt_gazex, gt_gazey):
         if point[0] >= 0:
@@ -150,17 +153,18 @@ def gazefollow_auc(heatmap, gt_gazex, gt_gazey, height, width):
             y = min(y, height - 1)
             target_map[y, x] = 1
     heatmap = torch.nan_to_num(heatmap, nan=0.0, posinf=1.0, neginf=0.0)
-    resized_heatmap = torch.nn.functional.interpolate(
+    resized_heatmap: torch.Tensor = NF.interpolate(
         heatmap.unsqueeze(dim=0).unsqueeze(dim=0),
         (height, width),
         mode='bilinear'
-    ).squeeze()
+    )
+    resized_heatmap = resized_heatmap.squeeze()
     auc = roc_auc_score(target_map.flatten(), resized_heatmap.cpu().flatten())
 
     return auc
 
 # Reference: https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/eval_on_gazefollow.py#L81
-def gazefollow_l2(heatmap, gt_gazex, gt_gazey):
+def gazefollow_l2(heatmap: torch.Tensor, gt_gazex, gt_gazey):
     argmax = heatmap.flatten().argmax().item()
     pred_y, pred_x = np.unravel_index(argmax, (heatmap.shape[0], heatmap.shape[1]))
     pred_x = pred_x / float(heatmap.shape[1])
@@ -177,9 +181,9 @@ def gazefollow_l2(heatmap, gt_gazex, gt_gazey):
 
 # VideoAttentionTarget calculates AUC on 64x64 heatmap, defining a rectangular tolerance region of 6*(sigma=3) + 1 (uses 2D Gaussian code but binary thresholds > 0 resulting in rectangle)
 # References:
-    # https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/eval_on_videoatttarget.py#L106
-    # https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/utils/imutils.py#L31
-def vat_auc(heatmap, gt_gazex, gt_gazey):
+# https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/eval_on_videoatttarget.py#L106
+# https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/utils/imutils.py#L31
+def vat_auc(heatmap: torch.Tensor, gt_gazex, gt_gazey):
     res = 64
     sigma = 3
     assert heatmap.shape[0] == res and heatmap.shape[1] == res
@@ -194,7 +198,7 @@ def vat_auc(heatmap, gt_gazex, gt_gazey):
     return auc
 
 # Reference: https://github.com/ejcgt/attention-target-detection/blob/acd264a3c9e6002b71244dea8c1873e5c5818500/eval_on_videoatttarget.py#L118
-def vat_l2(heatmap, gt_gazex, gt_gazey):
+def vat_l2(heatmap: torch.Tensor, gt_gazex, gt_gazey):
     heatmap = torch.nan_to_num(heatmap, nan=0.0, posinf=1.0, neginf=0.0)
     argmax = heatmap.flatten().argmax().item()
     pred_y, pred_x = np.unravel_index(argmax, (64, 64))

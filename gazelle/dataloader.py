@@ -36,9 +36,9 @@ class GazeDataset(torch.utils.data.dataset.Dataset):
         self.heatmap_width = int(heatmap_size[1])
 
         if dataset_name == "gazefollow":
-            self.data = load_data_gazefollow(os.path.join(self.path, "{}_preprocessed.json".format(split)))
+            self.data = load_data_gazefollow(os.path.join(self.path, f"{split}_preprocessed.json"))
         elif dataset_name == "videoattentiontarget":
-            self.data = load_data_vat(os.path.join(self.path, "{}_preprocessed.json".format(split)), sample_rate=sample_rate)
+            self.data = load_data_vat(os.path.join(self.path, f"{split}_preprocessed.json"), sample_rate=sample_rate)
         else:
             raise ValueError("Invalid dataset: {}".format(dataset_name))
 

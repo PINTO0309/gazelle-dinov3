@@ -17,7 +17,7 @@ class Backbone(nn.Module, ABC):
         super(Backbone, self).__init__()
 
     @abstractmethod
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         pass
 
     @abstractmethod
@@ -130,7 +130,7 @@ class DinoV2Backbone(Backbone):
         super(DinoV2Backbone, self).__init__()
         self.model = torch.hub.load('facebookresearch/dinov2', model_name)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         b, c, h, w = x.shape
         out_h, out_w = self.get_out_size((h, w))
         x = self.model.forward_features(x)['x_norm_patchtokens']
@@ -251,7 +251,7 @@ class RopePositionEmbedding(nn.Module):
         self.periods.data.copy_(periods)
 
 
-def rotate_half(x):
+def rotate_half(x: torch.Tensor):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
     x2 = x[..., x.shape[-1] // 2 :]
@@ -272,7 +272,7 @@ class Mlp(nn.Module):
         self.act = act_layer()
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         x = self.fc1(x); x = self.act(x); x = self.drop(x); x = self.fc2(x); x = self.drop(x)
         return x
 
@@ -285,11 +285,11 @@ class PatchEmbed(nn.Module):
         self.grid_size = (img_size[0] // patch_size[0], img_size[1] // patch_size[1])
         self.num_patches = self.grid_size[0] * self.grid_size[1]
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         return self.proj(x).flatten(2).transpose(1, 2)
 
 
-def drop_path(x, drop_prob: float = 0., training: bool = False):
+def drop_path(x: torch.Tensor, drop_prob: float = 0., training: bool = False):
     if drop_prob == 0. or not training: return x
     keep_prob = 1 - drop_prob
     shape = (x.shape[0],) + (1,) * (x.ndim - 1)
@@ -306,7 +306,7 @@ class DropPath(nn.Module):
         return drop_path(x, self.drop_prob, self.training)
 
 
-def _no_grad_trunc_normal_(tensor, mean, std, a, b):
+def _no_grad_trunc_normal_(tensor: torch.Tensor, mean, std, a, b):
     def norm_cdf(x): return (1. + math.erf(x / math.sqrt(2.))) / 2.
     if (mean < a - 2 * std) or (mean > b + 2 * std):
         warnings.warn("mean is more than 2 std from [a, b] in nn.init.trunc_normal_. The distribution of values may be incorrect.", stacklevel=2)
@@ -316,7 +316,7 @@ def _no_grad_trunc_normal_(tensor, mean, std, a, b):
         return tensor
 
 
-def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
+def trunc_normal_(tensor: torch.Tensor, mean=0., std=1., a=-2., b=2.):
     return _no_grad_trunc_normal_(tensor, mean, std, a, b)
 
 
@@ -331,9 +331,10 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-    def forward(self, x, rope_sincos=None, register_hook=False):
+    def forward(self, x: torch.Tensor, rope_sincos=None, register_hook=False):
         B, N, C = x.shape
-        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        qkv: torch.Tensor = self.qkv(x)
+        qkv = qkv.reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)
 
         if rope_sincos is not None:
@@ -347,6 +348,7 @@ class Attention(nn.Module):
             q = torch.cat((q_cls, q_patch), dim=2)
             k = torch.cat((k_cls, k_patch), dim=2)
 
+        attn: torch.Tensor
         attn = (q @ k.transpose(-2, -1)) * self.scale
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
@@ -431,7 +433,7 @@ class VisionTransformer(nn.Module):
     def feature_dim(self):
         return self.embed_dim
 
-    def forward_features(self, x, register_hook=False):
+    def forward_features(self, x: torch.Tensor, register_hook=False):
         B, C, H, W = x.shape
 
         x_embed = self._model.patch_embed(x)
@@ -452,7 +454,7 @@ class VisionTransformer(nn.Module):
         pooled_features = features.mean(dim=[2, 3])
         return {'pooled_features': pooled_features}
 
-    def forward(self, x, register_hook=False):
+    def forward(self, x: torch.Tensor, register_hook=False):
         outs = []
         B, C, H, W = x.shape
 
@@ -565,7 +567,7 @@ class DinoV3Backbone(Backbone):
             self.dinov3.eval()
             self.dinov3.requires_grad_(False)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         b, c, h, w = x.shape
         out_h, out_w = self.get_out_size((h, w))
         features = self.dinov3.forward_features(x)
