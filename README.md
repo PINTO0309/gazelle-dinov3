@@ -597,7 +597,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.90 M|0.9580|0.0410|0.0990|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14.pt)|---|
   |Atto-distillation|2.93 M||||Download|Download|
   |Femto-distillation|3.15 M|0.9391|0.0656|0.1289|Download|Download|
-  |Pico-distillation|3.51 M||||Download|Download|
+  |Pico-distillation|3.51 M|0.9491|0.0544|0.1149|Download|Download|
   |N-distillation|4.61 M||||Download|Download|
   |S-distillation|8.17 M|0.9545|0.0484|0.1118|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tiny.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tiny_1x3x640x640_1xNx4.onnx)|
   |M-distillation|12.37 M|0.9564|0.0462|0.1042|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tinyplus.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tinyplus_1x3x640x640_1xNx4.onnx)|
