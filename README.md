@@ -463,7 +463,7 @@ uv run python scripts/train_vat.py \
 --grad_clip_norm 1.0 \
 --disable_sigmoid \
 --disable_progressive_unfreeze \
---distill_teacher gazelle_dinov3_vits16plus_inout \
+--distill_teacher gazelle_dinov3_vitb16_inout \
 --distill_weight 0.3 \
 --distill_temp_end 4.0
 
