@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 [--runs N] <onnx_model> [<onnx_model> ...]"
+  echo "Usage: $0 [--runs N] [-oep PROVIDER] <onnx_model> [<onnx_model> ...]"
   echo "       (legacy) $0 <onnx_model> [run_count]"
 }
 
@@ -13,6 +13,7 @@ fi
 
 runs=10
 runs_set=false
+execution_provider="tensorrt"
 declare -a models=()
 
 while [ $# -gt 0 ]; do
@@ -28,6 +29,14 @@ while [ $# -gt 0 ]; do
       fi
       runs="$2"
       runs_set=true
+      shift 2
+      ;;
+    -oep|--oep)
+      if [ $# -lt 2 ]; then
+        echo "Error: $1 requires an argument such as 'cpu', 'cuda', or 'tensorrt'." >&2
+        exit 1
+      fi
+      execution_provider="$2"
       shift 2
       ;;
     --help|-h)
@@ -93,7 +102,7 @@ for onnx_model in "${models[@]}"; do
     echo "[${model_basename}] Running iteration ${run_id}/${runs}"
     tmp_output="$(mktemp)"
 
-    if ! uv run sit4onnx -if "${onnx_model}" -tlc 1000 -oep tensorrt -fs "${input_batch}" "${input_channels}" "${input_height}" "${input_width}" -fs 1 "${run_id}" 4 | tee "${tmp_output}"; then
+    if ! uv run sit4onnx -if "${onnx_model}" -tlc 1000 -oep "${execution_provider}" -fs "${input_batch}" "${input_channels}" "${input_height}" "${input_width}" -fs 1 "${run_id}" 4 | tee "${tmp_output}"; then
       echo "sit4onnx failed on iteration ${run_id} for ${model_basename}; aborting." >&2
       rm -f "${tmp_output}"
       exit 1
