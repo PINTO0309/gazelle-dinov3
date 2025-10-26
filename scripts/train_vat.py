@@ -17,6 +17,7 @@ from tqdm import tqdm
 from sklearn.metrics import average_precision_score
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.amp import autocast, GradScaler
 from torch.utils.tensorboard import SummaryWriter
 
@@ -390,6 +391,12 @@ def main():
         print(f"Resuming training from {args.resume} at epoch {start_epoch}")
     model.cuda()
 
+    heatmap_size = getattr(model, "out_size", (64, 64))
+    if isinstance(heatmap_size, (list, tuple)):
+        heatmap_size = tuple(int(dim) for dim in heatmap_size)
+    else:
+        heatmap_size = (int(heatmap_size), int(heatmap_size))
+
     teacher_model = None
     distill_loss_fn = nn.KLDivLoss(reduction='batchmean')
     distill_enabled = args.distill_weight is not None and args.distill_weight > 0
@@ -512,10 +519,10 @@ def main():
         if args.use_amp and resume_checkpoint.get("scaler") is not None:
             scaler.load_state_dict(resume_checkpoint["scaler"])
 
-    train_dataset = GazeDataset('videoattentiontarget', args.data_path, 'train', transform, in_frame_only=False, sample_rate=args.frame_sample_every)
+    train_dataset = GazeDataset('videoattentiontarget', args.data_path, 'train', transform, heatmap_size=heatmap_size, in_frame_only=False, sample_rate=args.frame_sample_every)
     train_dl = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=args.n_workers)
     # Note this eval dataloader samples frames sparsely for efficiency - for final results, run eval_vat.py which uses sample rate 1
-    eval_dataset = GazeDataset('videoattentiontarget', args.data_path, 'test', transform, in_frame_only=False, sample_rate=args.frame_sample_every)
+    eval_dataset = GazeDataset('videoattentiontarget', args.data_path, 'test', transform, heatmap_size=heatmap_size, in_frame_only=False, sample_rate=args.frame_sample_every)
     eval_dl = torch.utils.data.DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn, num_workers=args.n_workers)
     total_train_steps = max(1, len(train_dl) * args.max_epochs) if distill_enabled else 1
 
@@ -587,6 +594,13 @@ def main():
                     with autocast('cuda', enabled=args.use_amp):
                         teacher_preds = teacher_model({"images": imgs_cuda, "bboxes": bbox_inputs})
                         teacher_heatmaps = torch.stack(teacher_preds['heatmap']).squeeze(dim=1)
+                if teacher_heatmaps.shape[-2:] != heatmap_preds.shape[-2:]:
+                    teacher_heatmaps = F.interpolate(
+                        teacher_heatmaps.unsqueeze(1),
+                        size=heatmap_preds.shape[-2:],
+                        mode='bilinear',
+                        align_corners=False,
+                    ).squeeze(1)
                 student_values = heatmap_preds.float() if args.use_amp else heatmap_preds
                 teacher_values = teacher_heatmaps.float()
                 if args.disable_sigmoid:

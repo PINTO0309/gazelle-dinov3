@@ -72,6 +72,17 @@ for onnx_model in "${models[@]}"; do
   plot_file="${output_dir}/benchmark_times_${model_stem}.png"
   title_label="${model_stem}"
 
+  if [[ "${model_stem}" =~ _([0-9]+)x([0-9]+)x([0-9]+)x([0-9]+)_ ]]; then
+    input_batch="${BASH_REMATCH[1]}"
+    input_channels="${BASH_REMATCH[2]}"
+    input_height="${BASH_REMATCH[3]}"
+    input_width="${BASH_REMATCH[4]}"
+  else
+    echo "Error: Could not infer input shape from model filename '${model_basename}'. Expected pattern '*_<BxCxHxW>_*'." >&2
+    exit 1
+  fi
+  echo "Detected input shape: ${input_batch}x${input_channels}x${input_height}x${input_width}"
+
   csv_files+=("${data_file}")
   title_labels+=("${title_label}")
 
@@ -82,7 +93,7 @@ for onnx_model in "${models[@]}"; do
     echo "[${model_basename}] Running iteration ${run_id}/${runs}"
     tmp_output="$(mktemp)"
 
-    if ! uv run sit4onnx -if "${onnx_model}" -tlc 1000 -oep tensorrt -fs 1 3 640 640 -fs 1 "${run_id}" 4 | tee "${tmp_output}"; then
+    if ! uv run sit4onnx -if "${onnx_model}" -tlc 1000 -oep tensorrt -fs "${input_batch}" "${input_channels}" "${input_height}" "${input_width}" -fs 1 "${run_id}" 4 | tee "${tmp_output}"; then
       echo "sit4onnx failed on iteration ${run_id} for ${model_basename}; aborting." >&2
       rm -f "${tmp_output}"
       exit 1
