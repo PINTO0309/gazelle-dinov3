@@ -706,8 +706,16 @@ def main():
                 inout_preds = inout_preds.float()
             for i in range(heatmap_probs.shape[0]):
                 if inout[i] == 1: # in-frame
-                    auc = vat_auc(heatmap_probs[i], gazex[i][0], gazey[i][0])
-                    l2 = vat_l2(heatmap_probs[i], gazex[i][0], gazey[i][0])
+                    eval_heatmap = heatmap_probs[i]
+                    if eval_heatmap.shape[-2:] != (64, 64):
+                        eval_heatmap = F.interpolate(
+                            eval_heatmap.unsqueeze(0).unsqueeze(0),
+                            size=(64, 64),
+                            mode='bilinear',
+                            align_corners=False,
+                        ).squeeze(0).squeeze(0)
+                    auc = vat_auc(eval_heatmap, gazex[i][0], gazey[i][0])
+                    l2 = vat_l2(eval_heatmap, gazex[i][0], gazey[i][0])
                     aucs.append(auc)
                     l2s.append(l2)
                 all_inout_preds.append(inout_preds[i].item())
