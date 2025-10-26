@@ -709,6 +709,15 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |:-:|:-:|
   |<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vits16_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/c51e3c81-65ba-4216-8907-087d505eeaea" />|<img width="1280" height="800" alt="benchmark_times_gazelle_dinov3_vits16plus_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/e59b053f-10e8-4b59-abe7-76b8858fc14f" />|
 
+  <img width="700" alt="benchmark_times_combined_2" src="https://github.com/user-attachments/assets/cb876564-f776-43c4-9547-6c2de220c2e1" />
+
+  |N|Pico|
+  |:-:|:-:|
+  |<img width="1280" height="800" alt="benchmark_times_gazelle_hgnetv2_n_distill_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/cbef40a6-937f-4213-89b4-6403d9dd4b27" />|<img width="1280" height="800" alt="benchmark_times_gazelle_hgnetv2_pico_distill_1x3x640x640_1xNx4" src="https://github.com/user-attachments/assets/f5ddf1e5-25b2-4589-9cdb-727a59120620" />|
+
+  |Femto|Atto|
+  |:-:|:-:|
+  |<img width="1280" height="800" alt="benchmark_times_gazelle_hgnetv2_femto_distill_1x3x416x416_1xNx4" src="https://github.com/user-attachments/assets/233239dc-c35f-4285-bfed-f02a51fe511c" />|<img width="1280" height="800" alt="benchmark_times_gazelle_hgnetv2_atto_distill_1x3x320x320_1xNx4" src="https://github.com/user-attachments/assets/137a961b-6027-4ddc-88c8-25f8b74c55fa" />|
 
 - VideoAttentionTarget
 
