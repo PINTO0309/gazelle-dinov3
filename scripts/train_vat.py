@@ -26,7 +26,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from gazelle.dataloader import GazeDataset, collate_fn
-from gazelle.backbone import configure_backbone_finetune, get_backbone_num_blocks
+from gazelle.backbone import (
+    configure_backbone_finetune,
+    get_backbone_num_blocks,
+    DinoV2Backbone,
+    DinoV3Backbone,
+)
 from gazelle.model import get_gazelle_model, GazeLLE
 from gazelle.utils import vat_auc, vat_l2
 
@@ -396,10 +401,19 @@ def main():
         heatmap_size = tuple(int(dim) for dim in heatmap_size)
     else:
         heatmap_size = (int(heatmap_size), int(heatmap_size))
+    student_input_size = getattr(model, "in_size", (heatmap_size[0], heatmap_size[1]))
+    if isinstance(student_input_size, (list, tuple)):
+        student_input_size = tuple(int(dim) for dim in student_input_size)
+    else:
+        student_input_size = (int(student_input_size), int(student_input_size))
 
     teacher_model = None
     distill_loss_fn = nn.KLDivLoss(reduction='batchmean')
     distill_enabled = args.distill_weight is not None and args.distill_weight > 0
+    teacher_input_size = None
+    teacher_requires_normalization = False
+    teacher_mean = None
+    teacher_std = None
     if distill_enabled:
         if not args.distill_teacher:
             raise ValueError("distill_weight > 0 but no distill_teacher specified.")
@@ -420,6 +434,18 @@ def main():
         teacher_model.eval()
         for param in teacher_model.parameters():
             param.requires_grad_(False)
+        teacher_input_size = getattr(teacher_model, "in_size", student_input_size)
+        if isinstance(teacher_input_size, (list, tuple)):
+            teacher_input_size = tuple(int(dim) for dim in teacher_input_size)
+        else:
+            teacher_input_size = (int(teacher_input_size), int(teacher_input_size))
+        teacher_requires_normalization = isinstance(
+            getattr(teacher_model, "backbone", None),
+            (DinoV2Backbone, DinoV3Backbone),
+        )
+        if teacher_requires_normalization:
+            teacher_mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32).view(1, 3, 1, 1)
+            teacher_std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32).view(1, 3, 1, 1)
         print(f"Knowledge distillation enabled: teacher={args.distill_teacher}, weight={args.distill_weight}, "
               f"temp_start={args.distill_temp_start}, temp_end={args.distill_temp_end} (cosine schedule)")
     else:
@@ -590,9 +616,28 @@ def main():
                     total_train_steps - 1,
                 )
                 temperature = max(1e-6, temperature)
+                teacher_imgs = imgs_cuda
+                if (
+                    teacher_input_size is not None
+                    and (
+                        teacher_imgs.shape[-2] != teacher_input_size[0]
+                        or teacher_imgs.shape[-1] != teacher_input_size[1]
+                    )
+                ):
+                    teacher_imgs = F.interpolate(
+                        teacher_imgs,
+                        size=teacher_input_size,
+                        mode='bilinear',
+                        align_corners=False,
+                    )
+                if teacher_requires_normalization and teacher_mean is not None and teacher_std is not None:
+                    if teacher_mean.device != teacher_imgs.device:
+                        teacher_mean = teacher_mean.to(teacher_imgs.device)
+                        teacher_std = teacher_std.to(teacher_imgs.device)
+                    teacher_imgs = (teacher_imgs - teacher_mean) / teacher_std
                 with torch.no_grad():
                     with autocast('cuda', enabled=args.use_amp):
-                        teacher_preds = teacher_model({"images": imgs_cuda, "bboxes": bbox_inputs})
+                        teacher_preds = teacher_model({"images": teacher_imgs, "bboxes": bbox_inputs})
                         teacher_heatmaps = torch.stack(teacher_preds['heatmap']).squeeze(dim=1)
                 if teacher_heatmaps.shape[-2:] != heatmap_preds.shape[-2:]:
                     teacher_heatmaps = F.interpolate(
