@@ -738,6 +738,18 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |XL (Teacher)|**88.50 M**|**0.9399**|**0.0943**|0.9051|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16_inout.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16_inout_1x3x640x640_1xNx4.onnx)|
 
 ## ONNX
+- An ultra-lightweight object detection model dedicated to human detection
+
+  https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/deimv2_hgnetv2_pico_wholebody34_340query_n_batch_640x640.onnx
+
+  or
+  
+  https://github.com/PINTO0309/PINTO_model_zoo/tree/main/472_DEIMv2-Wholebody34
+
+- Gaze-LLE-DINOv3 models
+
+  https://github.com/PINTO0309/gazelle-dinov3/releases/tag/weights
+
 - Inputs
   |Name|Note|
   |:-|:-|
