@@ -869,6 +869,36 @@ options:
     Disable Gazelle gaze heatmap rendering.
 ```
 
+## Inference speed benchmark
+```bash
+./benchmark.sh -h
+Usage: ./benchmark.sh [--runs N] [--oep PROVIDER] <onnx_model> [<onnx_model> ...]
+```
+- CPU
+  ```bash
+  ./benchmark.sh --oep cpu \
+  gazelle_hgnetv2_atto_distill_1x3x320x320_1xNx4.onnx \
+  gazelle_hgnetv2_femto_distill_1x3x416x416_1xNx4.onnx \
+  gazelle_hgnetv2_pico_distill_1x3x640x640_1xNx4.onnx \
+  gazelle_hgnetv2_n_distill_1x3x640x640_1xNx4.onnx
+  ```
+- CUDA
+  ```bash
+  ./benchmark.sh --oep cuda \
+  gazelle_hgnetv2_atto_distill_1x3x320x320_1xNx4.onnx \
+  gazelle_hgnetv2_femto_distill_1x3x416x416_1xNx4.onnx \
+  gazelle_hgnetv2_pico_distill_1x3x640x640_1xNx4.onnx \
+  gazelle_hgnetv2_n_distill_1x3x640x640_1xNx4.onnx
+  ```
+- TensorRT
+  ```bash
+  ./benchmark.sh --oep tensorrt \
+  gazelle_hgnetv2_atto_distill_1x3x320x320_1xNx4.onnx \
+  gazelle_hgnetv2_femto_distill_1x3x416x416_1xNx4.onnx \
+  gazelle_hgnetv2_pico_distill_1x3x640x640_1xNx4.onnx \
+  gazelle_hgnetv2_n_distill_1x3x640x640_1xNx4.onnx
+  ```
+
 ## Citation
 If you find this project useful, please consider citing:
 ```bibtex
