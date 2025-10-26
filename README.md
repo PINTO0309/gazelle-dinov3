@@ -499,7 +499,7 @@ uv run python scripts/train_vat.py \
 --init_ckpt ckpts/gazelle_hgnetv2_pico_distill.pt \
 --frame_sample_every 6 \
 --log_iter 50 \
---max_epochs 55 \
+--max_epochs 50 \
 --batch_size 128 \
 --n_workers 60 \
 --lr_non_inout 1e-5 \
@@ -718,8 +718,8 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.90 M|0.9370|0.1030|0.9030|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14_inout.pt)|---|
   |Atto-distillation|2.93 M||||Download|Download|
   |Femto-distillation|3.15 M||||Download|Download|
-  |Pico-distillation|3.51 M||||Download|Download|
-  |N-distillation|4.61 M||||Download|Download|
+  |Pico-distillation|3.51 M|0.9247|0.1245|0.8861|Download|Download|
+  |N-distillation|4.61 M|0.9218|0.1258|0.9012|Download|Download|
   |S-distillation|8.17 M|0.9286|0.1155|0.8945|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tiny_inout.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tiny_inout_1x3x640x640_1xNx4.onnx)|
   |M-distillation|12.37 M|0.9325|0.1133|0.8953|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tinyplus_inout.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tinyplus_inout_1x3x640x640_1xNx4.onnx)|
   |L-distillation|24.33 M|0.9347|0.1026|0.9011|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16_inout.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16_inout_1x3x640x640_1xNx4.onnx)|
