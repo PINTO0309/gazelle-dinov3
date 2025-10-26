@@ -737,6 +737,14 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |X-distillation|31.43 M|0.9366|0.1050|**0.9118**|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16plus_inout.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16plus_inout_1x3x640x640_1xNx4.onnx)|
   |XL (Teacher)|**88.50 M**|**0.9399**|**0.0943**|0.9051|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16_inout.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16_inout_1x3x640x640_1xNx4.onnx)|
 
+## ONNX
+|Name|Note|
+|:-|:-|
+|image_bgr|`float32[1, 3, H, W]`. BGR image (not RGB). 640x640 or 416x416 or 320x320.|
+|bboxes_x1y1x2y2|`float32[1, heads, 4]`. `heads`=`Number of heads detected by the object detection model`. `4`=`[x1,y1,x2,y2]`. `x1`, `y1`, `x2`, `y2` are coordinates normalized to 0.0-1.0.<br>https://github.com/PINTO0309/gazelle-dinov3/blob/a2d21711f57b46c0c9b9ddb580e3eaf9483b6816/demo_deimv2_onnx_wholebody34_with_edges.py#L894-L906|
+|heatmap|`float32[heads, H, W]`. 64x64 or 48x48 or 32x32. Heatmap of the gaze region relative to the input head. It is scaled to the same size as the input image and then used to render it as a heatmap.<br>https://github.com/PINTO0309/gazelle-dinov3/blob/a2d21711f57b46c0c9b9ddb580e3eaf9483b6816/demo_deimv2_onnx_wholebody34_with_edges.py#L954-L977|
+|inout|`float32[heads]`. This is a score that indicates whether the gaze area associated with the head is looking inside or outside the image. It ranges from 0.0 to 1.0, and the closer it is to 1.0, the higher the probability that the gaze area is looking inside the image.|
+
 ## Citation
 If you find this project useful, please consider citing:
 ```bibtex
