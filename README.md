@@ -687,10 +687,10 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |:-:|:-:|-:|-:|-:|:-:|:-:|
   |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.80 M|0.9560|0.0450|0.1040|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14.pt)|---|
   |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.90 M|0.9580|0.0410|0.0990|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14.pt)|---|
-  |Atto-distillation|2.93 M|0.9267|0.0826|0.1482|Download|Download|
-  |Femto-distillation|3.15 M|0.9391|0.0656|0.1289|Download|Download|
-  |Pico-distillation|3.51 M|0.9491|0.0544|0.1149|Download|Download|
-  |N-distillation|4.61 M|0.9481|0.0549|0.1158|Download|Download|
+  |Atto-distillation|2.93 M|0.9267|0.0826|0.1482|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_atto_distill.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_atto_distill_1x3x320x320_1xNx4.onnx)|
+  |Femto-distillation|3.15 M|0.9391|0.0656|0.1289|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_femto_distill.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_femto_distill_1x3x416x416_1xNx4.onnx)|
+  |Pico-distillation|3.51 M|0.9491|0.0544|0.1149|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_pico_distill.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_pico_distill_1x3x640x640_1xNx4.onnx)|
+  |N-distillation|4.61 M|0.9481|0.0549|0.1158|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_n_distill.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_n_distill_1x3x640x640_1xNx4.onnx)|
   |S-distillation|8.17 M|0.9545|0.0484|0.1118|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tiny.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tiny_1x3x640x640_1xNx4.onnx)|
   |M-distillation|12.37 M|0.9564|0.0462|0.1042|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tinyplus.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vit_tinyplus_1x3x640x640_1xNx4.onnx)|
   |L-distillation|24.33 M|0.9593|0.0418|0.0992|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16_1x3x640x640_1xNx4.onnx)|
