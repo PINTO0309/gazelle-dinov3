@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter('ignore')
 import argparse
 import torch
 from PIL import Image
@@ -85,9 +87,9 @@ def main():
                 inout_gts.append(inout[i][j])
 
 
-    print("AUC: {}".format(np.array(aucs).mean()))
-    print("Avg L2: {}".format(np.array(l2s).mean()))
-    print("Inout AP: {}".format(average_precision_score(inout_gts, inout_preds)))
+    print(f"AUC: {np.array(aucs).mean()}")
+    print(f"Avg L2: {np.array(l2s).mean()}")
+    print(f"Inout AP: {average_precision_score(inout_gts, inout_preds)}")
 
 
 if __name__ == "__main__":

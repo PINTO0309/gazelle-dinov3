@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter('ignore')
 import argparse
 import torch
 from PIL import Image
@@ -75,9 +77,9 @@ def main():
                 avg_l2s.append(avg_l2)
                 min_l2s.append(min_l2)
 
-    print("AUC: {}".format(np.array(aucs).mean()))
-    print("Avg L2: {}".format(np.array(avg_l2s).mean()))
-    print("Min L2: {}".format(np.array(min_l2s).mean()))
+    print(f"AUC: {np.array(aucs).mean()}")
+    print(f"Avg L2: {np.array(avg_l2s).mean()}")
+    print(f"Min L2: {np.array(min_l2s).mean()}")
 
 
 if __name__ == "__main__":
