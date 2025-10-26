@@ -202,7 +202,7 @@ class GazeLLE_ONNX(nn.Module):
         std = torch.tensor([0.229,0.224,0.225], dtype=torch.float32).reshape([1,3,1,1])
 
         image_rgb = torch.cat([image_bgr[:, 2:3, ...], image_bgr[:, 1:2, ...], image_bgr[:, 0:1, ...]], dim=1)
-        image_rgb = F.resize(img=image_rgb, size=(640, 640), antialias=False)
+        image_rgb = F.resize(img=image_rgb, size=self.in_size, antialias=False)
         image_rgb = image_rgb * 0.003921569
         if isinstance(self.backbone, DinoV2Backbone) or isinstance(self.backbone, DinoV3Backbone):
             image_rgb = (image_rgb - mean) / std
