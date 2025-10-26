@@ -737,6 +737,24 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   |X-distillation|31.43 M|0.9366|0.1050|**0.9118**|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16plus_inout.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vits16plus_inout_1x3x640x640_1xNx4.onnx)|
   |XL (Teacher)|**88.50 M**|**0.9399**|**0.0943**|0.9051|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16_inout.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_dinov3_vitb16_inout_1x3x640x640_1xNx4.onnx)|
 
+## Validation
+- GazeFollow
+  ```bash
+  uv run python scripts/eval_gazefollow.py \
+  --data_path data/gazefollow_extended \
+  --model_name gazelle_dinov3_vit_tiny \
+  --ckpt_path ckpts/gazelle_dinov3_vit_tiny.pt \
+  --batch_size 64
+  ```
+- VideoAttentionTarget
+  ```bash
+  uv run python scripts/eval_vat.py \
+  --data_path data/videoattentiontarget \
+  --model_name gazelle_dinov3_vit_tiny_inout \
+  --ckpt_path ckpts/gazelle_dinov3_vit_tiny_inout.pt \
+  --batch_size 64
+  ```
+
 ## ONNX
 - An ultra-lightweight ViT model dedicated to human detection
 
