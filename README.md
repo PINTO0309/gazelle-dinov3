@@ -681,7 +681,7 @@ uv run python scripts/train_vat.py \
 |Inout AP|Average Precision represents the performance of the in/out head in classifying whether the gaze is within the frame (in) or outside the frame (out).<br>By looking at all combinations of precision and recall while moving the score threshold between 0 and 1, we measure threshold-independent discrimination ability.<br>The closer the score is to 1.0, the higher the score is for frames where the gaze is within the screen, and the lower the score is for frames where the gaze is outside the screen, indicating a stable distinction.|
 
 ## Benchmark results for each model
-High accuracy is not important to me at all. I'm only interested in whether the model has a realistic computational cost. `Atto`, `Femto`, `Pico`, `N`, `S`, `M`, `L`, `X`, `XL` are the performance of the models generated in this repository.
+High accuracy is not important to me at all. I'm only interested in whether the model has a realistic computational cost. `Atto`, `Femto`, `Pico`, `N`, `S`, `M`, `L`, `X`, `XL` are the performance of the models generated in this repository. Variants below `N` are CNN, and variants above `S` are ViT.
 
 - GazeFollow
 
