@@ -756,7 +756,7 @@ High accuracy is not important to me at all. I'm only interested in whether the 
   ```
 
 ## ONNX
-- An ultra-lightweight ViT model dedicated to human detection
+- An ultra-lightweight CNN model dedicated to human detection
 
   https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/deimv2_hgnetv2_pico_wholebody34_340query_n_batch_640x640.onnx
 
