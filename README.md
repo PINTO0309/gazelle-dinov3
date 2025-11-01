@@ -725,8 +725,8 @@ High accuracy is not important to me at all. I'm only interested in whether the 
 
   |Variant|Param<br>(Backbone+Head)|AUC ⬆️|Avg L2 ⬇️|AP IN/OUT ⬆️|Weight|ONNX|
   |:-:|:-:|-:|-:|-:|:-:|:-:|
-  |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.80 M|0.9330|0.1070|0.8970|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14_inout.pt)|---|
-  |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.90 M|0.9370|0.1030|0.9030|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14_inout.pt)|---|
+  |[Gaze-LLE (ViT-B)](https://arxiv.org/pdf/2412.09586)|88.80 M|0.9330|0.1070|0.8970|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitb14_inout.pt)<br>Head only|---|
+  |[Gaze-LLE (ViT-L)](https://arxiv.org/pdf/2412.09586)|302.90 M|0.9370|0.1030|0.9030|[Download](https://github.com/fkryan/gazelle/releases/download/v1.0.0/gazelle_dinov2_vitl14_inout.pt)<br>Head only|---|
   |Atto-distillation|2.93 M|0.9055|0.1523|0.8749|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_atto_inout_distill.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_atto_inout_distill_1x3x320x320_1xNx4.onnx)|
   |Femto-distillation|3.15 M|0.9166|0.1372|0.8779|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_femto_inout_distill.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_femto_inout_distill_1x3x416x416_1xNx4.onnx)|
   |Pico-distillation|3.51 M|0.9247|0.1245|0.8861|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_pico_inout_distill.pt)|[Download](https://github.com/PINTO0309/gazelle-dinov3/releases/download/weights/gazelle_hgnetv2_pico_inout_distill_1x3x640x640_1xNx4.onnx)|
